@@ -1,5 +1,4 @@
 import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/pages/home.dart';
 import 'package:fresh_front/pages/onboarding.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

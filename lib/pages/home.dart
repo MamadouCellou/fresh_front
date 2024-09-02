@@ -1,9 +1,9 @@
 import 'package:fresh_front/pages/compartiments.dart';
 import 'package:fresh_front/pages/dashboard.dart';
-import 'package:fresh_front/pages/produits.dart';
-import 'package:fresh_front/pages/profile.dart';
-import 'package:fresh_front/widget/text_field_search.dart';
+import 'package:fresh_front/pages/page_chaud_product.dart';
+import 'package:fresh_front/pages/page_froid_product.dart';
 import 'package:flutter/material.dart';
+import 'package:fresh_front/pages/reclage_select_compartiment.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -15,9 +15,9 @@ class _HomePageState extends State<HomePage> {
 
   static List<Widget> _widgetOptions = <Widget>[
     DashboardPage(),
-    PageProduits(),
-    PageCompartiment(),
-    ProfilePage()
+    PageFroidProduct(),
+    PageChaudProduct(),
+    ReclageSelectCompartiment()
   ];
 
   void _onItemTapped(int index) {
@@ -33,18 +33,15 @@ class _HomePageState extends State<HomePage> {
           leading: Row(
             children: [
               IconButton(
-                icon: Icon(Icons.location_on),
+                icon: Icon(Icons.location_on,),
                 onPressed: () {
                   // Action pour l'icône de localisation
                 },
-              ),
-              SizedBox(width: 3), // Espace entre l'icône et le texte
-              Text(
-                'Paris', // Nom de la ville
-                style: TextStyle(fontSize: 16),
-              ),
+              ),// Espace entre l'icône et le texte
+              
             ],
           ),
+          title: Text("Paris"),
           actions: [
             Stack(
               clipBehavior: Clip.none,
@@ -69,11 +66,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            SizedBox(width: 16), // Espace entre les icônes, si nécessaire
+            SizedBox(width: 6), // Espace entre les icônes, si nécessaire
           ],
         ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: SafeArea(
           child: _widgetOptions.elementAt(_selectedIndex),
         ),
@@ -86,16 +83,16 @@ class _HomePageState extends State<HomePage> {
             label: 'Acccueil',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Produits',
+            icon: Icon(Icons.ac_unit),
+            label: 'C. Froid',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.kitchen),
-            label: 'Compartiments',
+            icon: Icon(Icons.local_fire_department),
+            label: 'C. Chaud',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+           BottomNavigationBarItem(
+            icon: Icon(Icons.tune),
+            label: 'Reglage',
           ),
         ],
         currentIndex: _selectedIndex,

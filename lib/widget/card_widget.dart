@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 
 
 class CardWidget extends StatelessWidget {
-  final String name;
+  final String title;
   final String temperature;
-  const CardWidget({super.key, required this.name, required this.temperature});
+  final double width;
+  final double height;
+  const CardWidget({super.key, required this.title, required this.temperature,  this.width = 160,  this.height = 160});
 
   
 
@@ -20,13 +22,13 @@ class CardWidget extends StatelessWidget {
        borderRadius: BorderRadius.circular(10.0), // Rayons des coins de la bordure
       ),
       child: SizedBox(
-              width: 160,
-              height: 160,
+              width: width,
+              height: height,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(name,  style: TextStyle(
+                  Text(title,  style: TextStyle(
                     color: blackColor,
                     fontSize: 15,
                     fontWeight: FontWeight.bold

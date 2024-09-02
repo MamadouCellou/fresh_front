@@ -1,6 +1,5 @@
 import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/produits.dart';
-import 'package:fresh_front/services/service_mqtt.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 import 'package:fresh_front/widget/text_field_search.dart';
@@ -8,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
-import 'package:mqtt_client/mqtt_client.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -55,16 +53,17 @@ class _DashboardPageState extends State<DashboardPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                CardWidget(
+                 CardWidget(
+                 
                   temperature: "15",
-                  name: "Refroidissement",
+                  title: "Refroidissement",
                 ),
                 const SizedBox(
                   width: 10,
                 ),
                 const CardWidget(
                   temperature: '50',
-                  name: "Séchage",
+                  title: "Séchage",
                 ),
               ],
             ),
