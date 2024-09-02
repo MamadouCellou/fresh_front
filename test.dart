@@ -1,12 +1,11 @@
-
-import 'package:fresh_front/pages/affiche_produit.dart';
-
+/* import 'package:fresh_front/pages/affiche_produit.dart';
+import 'package:fresh_front/pages/compartiments.dart';
 import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/login.dart';
-import 'package:fresh_front/pages/page_chaud_product.dart';
-import 'package:fresh_front/pages/page_froid_product.dart';
+import 'package:fresh_front/pages/produits.dart';
+import 'package:fresh_front/pages/profile.dart';
+import 'package:fresh_front/widget/text_field_search.dart';
 import 'package:flutter/material.dart';
-import 'package:fresh_front/pages/reclage_select_compartiment.dart';
 import 'package:get/get.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,9 +26,9 @@ class _HomePageState extends State<HomePage> {
 
   static List<Widget> _widgetOptions = <Widget>[
     DashboardPage(),
-    PageFroidProduct(),
-    PageChaudProduct(),
-    ReclageSelectCompartiment()
+    // PageProduits(),
+    // PageCompartiment(),
+    ProfilePage()
   ];
 
   void _onItemTapped(int index) {
@@ -42,45 +41,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(Icons.menu), // Icône du menu
-            onPressed: () =>
-                Scaffold.of(context).openDrawer(), // Ouvre le Drawer
-          ),
-        ),
-        title: Row(
-          children: [
-            Text("Paris"),
-            Icon(Icons.location_on, size: 20,)
-          ],
-        ),
-        actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: Icon(Icons.notifications),
-                onPressed: () {
-                  // Action pour l'icône de notification
-                },
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.green, // Couleur du badge
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(width: 6), // Espace entre les icônes, si nécessaire
-        ],
+        title: Text("Acceuil"),
       ),
       drawer: Drawer(
         child: SafeArea(
@@ -118,7 +79,7 @@ class _HomePageState extends State<HomePage> {
                       // Divider(color: Colors.black.withOpacity(0.1),),
                       paramItem(
                           icon: Icons.menu_book,
-                          nom: "Guide de conservation",
+                          nom: "Guide conservation",
                           plus: true),
                       paramItem(
                           icon: Icons.person,
@@ -159,7 +120,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
         child: SafeArea(
           child: _widgetOptions.elementAt(_selectedIndex),
         ),
@@ -172,16 +133,16 @@ class _HomePageState extends State<HomePage> {
             label: 'Acccueil',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.ac_unit),
-            label: 'C. Froid',
+            icon: Icon(Icons.shopping_bag),
+            label: 'Produits',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.local_fire_department),
-            label: 'C. Chaud',
+            icon: Icon(Icons.kitchen),
+            label: 'Compartiments',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.tune),
-            label: 'Reglage',
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
         currentIndex: _selectedIndex,
@@ -318,4 +279,4 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
-}
+} */
