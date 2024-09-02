@@ -34,9 +34,6 @@ class CompartmentWidget extends StatelessWidget {
     super.key,
     required this.title,
     required this.temperature,
-    required this.isExpandedIcon,
-    required this.isExpandedTemperateur,
-    required this.isExpandedEtatCircuit,
     required this.isSliderPlage,
     required this.isSliderAdaptive,
     required this.isSliderEtat,
@@ -45,11 +42,9 @@ class CompartmentWidget extends StatelessWidget {
     required this.minControllerAdaptive,
     required this.maxControllerAdaptive,
     required this.onExpandedIcon,
-    required this.onPressedEtatCircuit,
-    required this.onPressedTemperature,
     required this.onChangePlage,
     required this.onChangeAdaptive,
-    required this.onChangeEtat,
+    required this.onChangeEtat, required this.isExpandedIcon, required this.isExpandedTemperateur, required this.isExpandedEtatCircuit, required this.onPressedEtatCircuit, required this.onPressedTemperature,
   });
 
   @override

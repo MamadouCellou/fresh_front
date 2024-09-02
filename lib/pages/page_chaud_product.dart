@@ -88,7 +88,7 @@ class _PageChaudProductState extends State<PageChaudProduct> {
               width: 100.0, // Largeur du bouton flottant
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  // Action à réaliser lorsque le bouton flottant est pressé
+                  
                 },
                 backgroundColor: greenColor,
                 label: Text('Ajouter', style: TextStyle(color: whiteColor),),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/widget/compartiment_widget.dart';
+import 'package:fresh_front/widget/compartiment_reclage_widget.dart';
+
 
 class PageCompartimentReclageFroid extends StatefulWidget {
   @override
@@ -9,62 +10,41 @@ class PageCompartimentReclageFroid extends StatefulWidget {
 
 class _PageCompartimentFroidReclageState extends State<PageCompartimentReclageFroid> {
   // Variables de l'état pour le compartiment froid
-  bool _isExpandedIconFroid = false;
-  bool _isExpandedTemperateurFroid= false;
-  bool _isExpandedEtatCircuitFoid = false;
+
+  late bool isSliderPlageManuelle = false;
+  late bool isSliderPlageAuto = false;
+  late bool isSliderEtatCircuit = false;
+
+  TextEditingController minControllerPlageManuelle = TextEditingController();
+  TextEditingController maxControllerPlageManuelle = TextEditingController();
+  TextEditingController minControllerPlageAuto = TextEditingController(text: '-2');
+  TextEditingController maxControllerPlageAuto = TextEditingController(text: '80');
+
+ onChangePlageManuelle (bool v) {
+  setState(() {
+    isSliderPlageManuelle = v;
+  });
+ }
+
+ onChangePlageAuto (bool v) {
+  setState(() {
+    isSliderPlageAuto = v;
+  });
+ }
+
+ onChangeEtatCircuit(bool v) {
+  setState(() {
+    isSliderEtatCircuit = v;
+  });
+ }
   
-  bool _isSliderPlageFroid = false;
-  bool _isSliderAdaptiveFroid = false;
-  bool _isSliderEtatFroid = false;
-
-  TextEditingController minControllerFroidPlage = TextEditingController();
-  TextEditingController maxControllerFroidPlage = TextEditingController();
-  TextEditingController minControllerFroidAdaptive = TextEditingController(text: '-2');
-  TextEditingController maxControllerFroidAdaptive = TextEditingController(text: '80');
-
-  void _onPressedTemperatureFroid() {
-    setState(() {
-      _isExpandedTemperateurFroid = !_isExpandedTemperateurFroid;
-    });
-  }
-
-  void _onPressedEtatCircuitFroid() {
-    setState(() {
-      _isExpandedEtatCircuitFoid = !_isExpandedEtatCircuitFoid;
-    });
-  }
-
-  void _onExpandedIconFroid() {
-    setState(() {
-       _isExpandedIconFroid = !_isExpandedIconFroid;
-    });
-  }
-
-  void _onChangeFroidPlage(bool v) {
-    setState(() {
-      _isSliderPlageFroid = v;
-    });
-  }
-
-  void _onChangeFroidAdaptive(bool v) {
-    setState(() {
-      _isSliderAdaptiveFroid = v;
-    });
-  }
-
-  void _onSliderEtatFroid(bool v) {
-    setState(() {
-      _isSliderEtatFroid = v;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: greenColor,
         title:Text(
-          "Compartiment Froid",
+            "Compartiment Froid",
              style: TextStyle(
               fontSize: 20,
               color: whiteColor,
@@ -72,13 +52,20 @@ class _PageCompartimentFroidReclageState extends State<PageCompartimentReclageFr
              ),
       ),
       ),
-      body: SingleChildScrollView(
+      body:  SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              
-            ],
+          padding:  EdgeInsets.all(20.0),
+          child: CompartimentReclageWidget(
+            isSliderPlageManuelle: isSliderPlageManuelle,
+            isSliderPlageAuto: isSliderPlageAuto, 
+            isSliderEtatCircuit: isSliderEtatCircuit,
+            minControllerPlageManuelle: minControllerPlageManuelle,
+            maxControllerPlageManuelle: maxControllerPlageManuelle,
+            minControllerPlageAuto: minControllerPlageAuto,
+            maxControllerPlageAuto: maxControllerPlageAuto,
+            onChangePlageManuelle: onChangePlageManuelle,
+            onChangePlageAuto: onChangePlageAuto,
+            onChangeEtatCircuit: onChangeEtatCircuit,
           )
         ),
       ),

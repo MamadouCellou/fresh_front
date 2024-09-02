@@ -1,4 +1,3 @@
-import 'package:fresh_front/pages/compartiments.dart';
 import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/page_chaud_product.dart';
 import 'package:fresh_front/pages/page_froid_product.dart';

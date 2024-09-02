@@ -1,11 +1,7 @@
 import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/pages/produits.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
-import 'package:fresh_front/widget/text_field_search.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -22,11 +18,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        leading: TextFielSearch(),
-        leadingWidth: double.infinity,
-      ),
+      appBar: null,
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -78,9 +70,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   style: optionStyle,
                 ),
                 IconButton(
-                  onPressed: () {
-                    Get.to(PageProduits());
-                  },
+                  onPressed: null,
                   icon: Icon(
                     Icons.arrow_right,
                     color: greenColor,

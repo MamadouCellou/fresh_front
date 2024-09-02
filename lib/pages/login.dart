@@ -1,7 +1,4 @@
-import 'dart:convert';
 
-import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/home.dart';
 import 'package:fresh_front/pages/signup.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,7 +8,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:get/get.dart';
 import 'package:getwidget/getwidget.dart';
-import 'package:http/http.dart' as http;
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
