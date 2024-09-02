@@ -1,11 +1,12 @@
 import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/pages/produits.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
+import 'package:fresh_front/widget/test.dart';
 import 'package:fresh_front/widget/text_field_search.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -18,6 +19,15 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   static const TextStyle optionStyle =
       TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
+
+      final List<String> imgList = [
+    'assets/images/agriculteur.png',
+    'assets/images/orange.png', // Remplace avec le chemin de ta deuxième image
+    'assets/images/mangue_1.png', // Remplace avec le chemin de ta troisième image
+  ];
+
+  int _currentIndex = 0;
+  final CarouselController _carouselController = CarouselController();
 
   @override
   Widget build(BuildContext context) {
@@ -32,20 +42,52 @@ class _DashboardPageState extends State<DashboardPage> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
-              height: 20,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5.0),
+              child: CarouselSlider.builder(
+                itemCount: imgList.length,
+                itemBuilder: (context, index, realIndex) {
+                  return Container(
+                    width: 230,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                            image: AssetImage(imgList[index]),
+                            fit: BoxFit.cover)),
+                  );
+                },
+                options: CarouselOptions(
+                  initialPage: 0,
+                  autoPlay: true,
+                  enlargeCenterPage: true,
+                  onPageChanged: (index, reason) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+              
+                  },
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
-            // Add an image at the top of the column
-            Image.asset(
-              'assets/images/agriculteur.png', // Path to your image asset
-              height: 150, // Adjust height as needed
-              width: double.infinity, // Makes the image take full width
-              fit: BoxFit.cover, // Adjusts the image to cover the area
-            ),
-            const Text(
-              "Vu d'ensemble des compartiments",
-              style: optionStyle,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: imgList.asMap().entries.map((entry) {
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    _currentIndex = entry.key;
+                  }),
+                  child: Container(
+                    width: 8.0,
+                    height: 8.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentIndex == entry.key
+                          ? Colors.blueAccent
+                          : Colors.grey,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(
               height: 20,
@@ -79,7 +121,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 IconButton(
                   onPressed: () {
-                    Get.to(PageProduits());
+          
                   },
                   icon: Icon(
                     Icons.arrow_right,

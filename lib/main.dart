@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       title: 'App MandaFresh',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        bottomSheetTheme: BottomSheetThemeData(backgroundColor: Colors.transparent),
+        // bottomSheetTheme: BottomSheetThemeData(backgroundColor: Colors.transparent),
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
           selectedItemColor:
               greenColor, // Couleur des icônes et labels sélectionnés
