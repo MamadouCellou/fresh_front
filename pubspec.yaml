@@ -50,6 +50,9 @@ dependencies:
   flutter_speed_dial: ^7.0.0
   lottie: ^3.1.2 
   carousel_slider: ^5.0.0
+  location: ^6.0.2
+  google_maps_flutter: ^2.9.0
+  geocoding: ^3.0.0
 
 
 dev_dependencies:

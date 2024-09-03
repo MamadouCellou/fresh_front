@@ -87,7 +87,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       image: "assets/images/agriculteur.png",
                       titre: "Bienvenue sur MandaFresh",
                       sousTitre:
-                          "Présentation de la solution pour conserver les aliments en utilisant un dispositif combinant chambre froide et chaude, contrôlable via smartphone",
+                          "La solution pour conserver les aliments en utilisant un dispositif combinant chambre froide et chaude, contrôlable via smartphone",
                     ),
                     OnboardingPage(
                       image: "assets/images/dispositif_appli.png",

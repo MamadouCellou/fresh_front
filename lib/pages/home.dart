@@ -1,13 +1,17 @@
+import 'dart:async';
 
 import 'package:fresh_front/pages/affiche_produit.dart';
 
 import 'package:fresh_front/pages/dashboard.dart';
+import 'package:fresh_front/pages/gps.dart';
 import 'package:fresh_front/pages/login.dart';
 import 'package:fresh_front/pages/page_chaud_product.dart';
 import 'package:fresh_front/pages/page_froid_product.dart';
 import 'package:flutter/material.dart';
 import 'package:fresh_front/pages/reclage_select_compartiment.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
+import 'package:location/location.dart' as loc;
 
 class HomePage extends StatefulWidget {
   @override
@@ -16,6 +20,77 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+
+  loc.LocationData? _currentLocation;
+  String _currentAddress = "Chargement...";
+  final loc.Location _location = loc.Location(); // Instance de Location
+  late StreamSubscription<loc.LocationData> _locationSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestLocationPermission();
+    _locationSubscription = _location.onLocationChanged.listen((loc.LocationData currentLocation) {
+      if (mounted) {
+        setState(() {
+          _currentLocation = currentLocation;
+          _getAddressFromLatLng();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _locationSubscription.cancel(); // Annule l'abonnement lorsque le widget est détruit
+    super.dispose();
+  }
+
+  Future<void> _requestLocationPermission() async {
+    bool _serviceEnabled;
+    loc.PermissionStatus _permissionGranted;
+
+    _serviceEnabled = await _location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await _location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+
+    _permissionGranted = await _location.hasPermission();
+    if (_permissionGranted == loc.PermissionStatus.denied) {
+      _permissionGranted = await _location.requestPermission();
+      if (_permissionGranted != loc.PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    _currentLocation = await _location.getLocation();
+    _getAddressFromLatLng();
+  }
+
+  Future<void> _getAddressFromLatLng() async {
+    if (_currentLocation != null) {
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          _currentLocation!.latitude!,
+          _currentLocation!.longitude!,
+        );
+
+        Placemark place = placemarks[0];
+
+        if (mounted) {
+          setState(() {
+            _currentAddress = 
+                "${place.locality}";
+          });
+        }
+      } catch (e) {
+        print(e);
+      }
+    }
+  }
 
   bool isDarkMode = false;
 
@@ -38,6 +113,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,11 +126,22 @@ class _HomePageState extends State<HomePage> {
                 Scaffold.of(context).openDrawer(), // Ouvre le Drawer
           ),
         ),
-        title: Row(
-          children: [
-            Text("Paris"),
-            Icon(Icons.location_on, size: 20,)
-          ],
+        title: GestureDetector(
+          onTap: () {
+            Get.to(MapPage());
+          },
+          child: Row(
+            children: [
+              Text(
+                _currentAddress,
+                style: TextStyle(fontSize: 18),
+              ),
+              Icon(
+                Icons.location_on,
+                size: 18,
+              )
+            ],
+          ),
         ),
         actions: [
           Stack(

@@ -1,10 +1,12 @@
 import 'package:fresh_front/constant/colors.dart';
+import 'package:fresh_front/pages/gps.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 
 
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:get/get.dart';
 
 
 
@@ -116,7 +118,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 IconButton(
 
-                  onPressed: null,
+                  onPressed: (){
+                  },
                   icon: Icon(
                     Icons.arrow_right,
                     color: greenColor,
