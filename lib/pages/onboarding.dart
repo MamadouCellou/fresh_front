@@ -250,8 +250,6 @@ class OnboardingPage extends StatelessWidget {
                   Text(
                     sousTitre,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
                       fontSize: 15,
                       decoration: TextDecoration.none,
                     ),

@@ -53,6 +53,8 @@ dependencies:
   location: ^6.0.2
   google_maps_flutter: ^2.9.0
   geocoding: ^3.0.0
+  firebase_core: ^2.24.2
+  cloud_firestore: ^4.14.0
 
 
 dev_dependencies:

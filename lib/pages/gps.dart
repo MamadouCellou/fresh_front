@@ -78,7 +78,7 @@ class _MapPageState extends State<MapPage> {
         if (mounted) {
           setState(() {
             _currentAddress =
-                "${place.locality}, ${place.administrativeArea}, ${place.country}";
+                "${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
           });
         }
       } catch (e) {

@@ -1,282 +1,518 @@
-/* import 'package:fresh_front/pages/affiche_produit.dart';
-import 'package:fresh_front/pages/compartiments.dart';
-import 'package:fresh_front/pages/dashboard.dart';
-import 'package:fresh_front/pages/login.dart';
-import 'package:fresh_front/pages/produits.dart';
-import 'package:fresh_front/pages/profile.dart';
-import 'package:fresh_front/widget/text_field_search.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+/* import 'dart:convert';
+import 'dart:io';
 
-class HomePage extends StatefulWidget {
+import 'package:fresh_front/pages/login.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:get/get.dart';
+import 'package:getwidget/getwidget.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
+
+import '../constant/colors.dart';
+
+class Signup extends StatefulWidget {
+  const Signup({super.key});
+
   @override
-  _HomePageState createState() => _HomePageState();
+  State<Signup> createState() => _SignupState();
 }
 
-class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
+Color couleurApp = Color.fromRGBO(17, 186, 24, 1);
 
-  bool isDarkMode = false;
+String _selectedGenre = "";
+String errorText = "Veillez remplir ce champ";
 
-  bool isProfile = false;
-  bool isMandaFreshSelected = false;
-  bool showAccounts = false;
+class _SignupState extends State<Signup> {
+  final _formKey = GlobalKey<FormBuilderState>();
+  bool _passwordVisible = false;
+  bool _mandaPasswordVisible = false;
 
-  String selectedAccount = "Compte 1";
+  bool? checked = false;
 
-  static List<Widget> _widgetOptions = <Widget>[
-    DashboardPage(),
-    // PageProduits(),
-    // PageCompartiment(),
-    ProfilePage()
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Acceuil"),
-      ),
-      drawer: Drawer(
-        child: SafeArea(
-          child: Scaffold(
-            body: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundImage: AssetImage('assets/images/cellou.jpg'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(top: 10, bottom: 10),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          "S'inscrire",
+                          style: TextStyle(
+                            fontSize: 30,
+                          ),
+                        ),
                       ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Mamadou Cellou Diallo',
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 20),
+                      child: Text(
+                        textAlign: TextAlign.left,
+                        "Vos informations personnelles",
                         style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 5),
-                      Text(
-                        'cellou@gmail.com',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 20),
+                      child: Text(
+                        textAlign: TextAlign.center,
+                        "Renseignez vos informations en dessous ou inscrivez-vous avec votre compte social",
                       ),
-                      Divider(),
-                      paramItem(
-                          icon: Icons.settings, nom: "Paramètres", plus: true),
-                      // Divider(color: Colors.black.withOpacity(0.1),),
-                      paramItem(
-                          icon: Icons.menu_book,
-                          nom: "Guide conservation",
-                          plus: true),
-                      paramItem(
-                          icon: Icons.person,
-                          nom: "Modifier profil",
-                          plus: true),
-                      paramItem(
-                          icon: Icons.feedback, nom: "Aide & commentaires"),
-                      paramItem(
-                          icon: Icons.share, nom: "Partager l'application")
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.brightness_4),
-                        title: Text('Sombre/Clair'),
-                        trailing: Switch(
-                          value: isDarkMode,
-                          onChanged: (val) {
-                            setState(() {
-                              isDarkMode = val;
-                            });
-                          },
-                        ),
+                    ),
+                    FormBuilder(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          buildChamp(
+                              name: "nom",
+                              hintText: "Entrer votre nom",
+                              labelText: "Nom"),
+                          buildChamp(
+                              name: "prenom",
+                              hintText: "Entrer votre prenom",
+                              labelText: "Prenom"),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 20),
+                            child: FormBuilderDateTimePicker(
+                              name: "dateNaissance",
+                              validator: FormBuilderValidators.required(
+                                  errorText: "Veillez remplir ce champ"),
+                              inputType: InputType.date,
+                              format: DateFormat("dd/MM/yyyy"),
+                              initialDate: DateTime.now(),
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                filled: true,
+                                fillColor: Colors.black.withOpacity(0.1),
+                                labelText: "Date de naissance",
+                                labelStyle: TextStyle(fontSize: 20),
+                                hintText:
+                                    "Sélectionnez votre date de naissance",
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 10),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: couleurApp),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          buildChamp(
+                              name: "profession",
+                              hintText: "Entrer votre profession",
+                              labelText: "Profession"),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 20),
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.black.withOpacity(0.1),
+                                labelText: 'Votre genre',
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              items: ['Homme', 'Femme']
+                                  .map((value) => DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(value),
+                                      ))
+                                  .toList(),
+                              validator: FormBuilderValidators.required(),
+                              onChanged: (newGenre) {
+                                setState(() {
+                                  print("Avant : " + _selectedGenre);
+                                  _selectedGenre = newGenre!;
+                                  print("Après : " + _selectedGenre);
+                                });
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 20),
+                            child: FormBuilderTextField(
+                              name: "email",
+                              cursorColor: couleurApp,
+                              validator: FormBuilderValidators.email(),
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                filled: true,
+                                fillColor: Colors.black.withOpacity(0.1),
+                                labelText: "Email",
+                                labelStyle: TextStyle(fontSize: 20),
+                                hintText: "Entrez votre email",
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 10),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: couleurApp),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 20),
+                            child: FormBuilderTextField(
+                              name: "password",
+                              validator: FormBuilderValidators.required(
+                                  errorText: "Veillez remplir ce champ"),
+                              cursorColor: couleurApp,
+                              obscureText: !_passwordVisible,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                filled: true,
+                                fillColor: Colors.black.withOpacity(0.1),
+                                labelText: "Mot de passe",
+                                labelStyle: TextStyle(
+                                  fontSize: 20,
+                                ),
+                                hintText: "Entrez votre mot de passe",
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _passwordVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _passwordVisible = !_passwordVisible;
+                                    });
+                                  },
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 10),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: couleurApp),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          _imageFile != null
+                              ? Padding(
+                                  padding: const EdgeInsets.only(bottom: 15),
+                                  child: Text(
+                                    "Votre photo",
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline),
+                                  ),
+                                )
+                              : ElevatedButton(
+                                  onPressed: _showImageSourceBottomSheet,
+                                  child: Text('Sélectionner votre photo'),
+                                ),
+                          _imageFile != null
+                              ? Image.file(
+                                  _imageFile!,
+                                  height: 200,
+                                )
+                              : SizedBox(),
+                          Padding(
+                              padding: EdgeInsets.only(top: 10, bottom: 30),
+                              child: Text(
+                                "Informations de votre MandaFresh",
+                                style: TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold),
+                              )),
+                          buildChamp(
+                              name: "identifiant",
+                              hintText: "Entrer l'identifiant du dispositif",
+                              labelText: "Identifiant"),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 20),
+                            child: FormBuilderTextField(
+                              name: "motDePasseDispositif",
+                              cursorColor: couleurApp,
+                              validator: FormBuilderValidators.required(
+                                  errorText: "Veillez remplir ce champ"),
+                              obscureText: !_mandaPasswordVisible,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                filled: true,
+                                fillColor: Colors.black.withOpacity(0.1),
+                                labelText: "Mot de passe du MandaFresh",
+                                labelStyle: TextStyle(fontSize: 20),
+                                hintText: "Entrez le mot de passe",
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _mandaPasswordVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _mandaPasswordVisible =
+                                          !_mandaPasswordVisible;
+                                    });
+                                  },
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 10),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: couleurApp),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          FormBuilderCheckbox(
+                            name: 'accept_terms',
+                            initialValue: false,
+                            title: Text(
+                              "J'accepte les termes et conditions",
+                              style: TextStyle(
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.blue,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            validator: FormBuilderValidators.equal(
+                              true,
+                              errorText:
+                                  'Vous devez accepter les termes et conditions pour continuer.',
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                checked = value ?? false;
+                              });
+                            },
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                                top: 20, left: 20, right: 20, bottom: 20),
+                            child: GFButton(
+                              onPressed: () {},
+                              shape: GFButtonShape.pills,
+                              fullWidthButton: true,
+                              textColor: Colors.white,
+                              size: GFSize.LARGE,
+                              color: GFColors.PRIMARY,
+                              textStyle: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold),
+                              text: "S'inscrire",
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(left: 10, right: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 0.5,
+                                    child: ColoredBox(
+                                      color: Colors.black.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 10),
+                                  child: Text("Ou connectez-vous avec"),
+                                ),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 0.5,
+                                    child: ColoredBox(
+                                      color: Colors.black.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 40, right: 40),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  buildSocial(
+                                      image: Image.asset(
+                                          "assets/images/apple.png")),
+                                  buildSocial(
+                                      image: Image.asset(
+                                          "assets/images/google.png")),
+                                  buildSocial(
+                                      image: Image.asset(
+                                          "assets/images/facebook.png")),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      ListTile(
-                        leading: Icon(Icons.logout),
-                        title: Text('Déconnexion'),
-                        trailing: Icon(Icons.arrow_right),
-                        onTap: _showDeconnexionBottomSheet,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("Vous avez un compte ?"),
+                          GestureDetector(
+                            onTap: () {
+                              Get.to(Login());
+                            },
+                            child: Text(
+                              " Se connecter",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.blue,
+                              ),
+                            ),
+                          )
+                        ],
                       ),
-                    ],
-                  )
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SafeArea(
-          child: _widgetOptions.elementAt(_selectedIndex),
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Acccueil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Produits',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.kitchen),
-            label: 'Compartiments',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
     );
   }
 
-  void _showDeconnexionBottomSheet() {
-    Navigator.pop(context);
+  void _showImageSourceBottomSheet() {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            void _toggleView() => setState(() => showAccounts = !showAccounts);
-            void _selectAccount(String accountName) => setState(() {
-                  selectedAccount = accountName;
-                  showAccounts = false;
-                });
-
-            return Padding(
-              padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom),
-              child: Wrap(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (showAccounts)
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.arrow_back),
-                                onPressed: _toggleView,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  "Changer de comptes",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: 23,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          Text(
-                            "Se déconnecter",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontSize: 23, fontWeight: FontWeight.bold),
-                          ),
-                        if (!showAccounts)
-                          ListTile(
-                            title: Text("Comptes MandaFresh",
-                                style: TextStyle(fontSize: 18)),
-                            subtitle: Text(
-                              selectedAccount,
-                              style: TextStyle(
-                                  fontSize: 16, color: Colors.grey[600]),
-                            ),
-                            trailing: Icon(Icons.arrow_right),
-                            onTap: _toggleView,
-                          ),
-                        if (!showAccounts)
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Get.to(Login());
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                    255,
-                                    240,
-                                    158,
-                                    158), // Utilisez 'backgroundColor' au lieu de 'primary'
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 30, vertical: 10),
-                              ),
-                              child: Text(
-                                "Se déconnecter",
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        if (showAccounts)
-                          Column(
-                            children: ["Compte 1", "Compte 2"]
-                                .map(
-                                  (account) => ListTile(
-                                    title: Text(account,
-                                        style: TextStyle(fontSize: 18)),
-                                    leading: Radio(
-                                      value: account,
-                                      groupValue: selectedAccount,
-                                      onChanged: (String? value) =>
-                                          _selectAccount(value!),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+        return Container(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                'Choisissez la source de l\'image',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            );
-          },
+              SizedBox(height: 20),
+              ListTile(
+                leading: Icon(Icons.camera),
+                title: Text('Caméra'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.image),
+                title: Text('Galerie'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.cancel),
+                title: Text('Annuler'),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget paramItem(
-      {required IconData icon,
-      required String nom,
-      bool plus = false,
-      dynamic go = AfficueProduit.new}) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(nom),
-      trailing: plus ? Icon(Icons.arrow_right) : null,
-      onTap: () {
-        Navigator.pop(context);
-        plus ? Get.to((go)) : null;
-      },
+  Widget buildChamp(
+      {required String name,
+      required String labelText,
+      required String hintText,
+      double paddingBottom = 20}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: paddingBottom),
+      child: FormBuilderTextField(
+        name: name,
+        cursorColor: couleurApp,
+        validator: FormBuilderValidators.required(errorText: errorText),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          filled: true,
+          fillColor: Colors.black.withOpacity(0.1),
+          labelText: labelText,
+          labelStyle: TextStyle(fontSize: 20),
+          hintText: hintText,
+          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: couleurApp),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
     );
   }
-} */
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+
+    setState(() {
+      if (pickedFile != null) {
+        _imageFile = File(pickedFile.path);
+      } else {
+        print('Aucune image sélectionnée.');
+      }
+    });
+  }
+
+  Widget buildSocial({required Image image}) {
+    return Container(
+      height: 70,
+      width: 70,
+      padding: EdgeInsets.all(20),
+      child: image,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(40),
+      ),
+    );
+  }
+}
+ */

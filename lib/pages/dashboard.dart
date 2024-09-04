@@ -3,12 +3,9 @@ import 'package:fresh_front/pages/gps.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 
-
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get/get.dart';
-
-
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -21,7 +18,7 @@ class _DashboardPageState extends State<DashboardPage> {
   static const TextStyle optionStyle =
       TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
 
-      final List<String> imgList = [
+  final List<String> imgList = [
     'assets/images/agriculteur.png',
     'assets/images/orange.png', // Remplace avec le chemin de ta deuxième image
     'assets/images/mangue_1.png', // Remplace avec le chemin de ta troisième image
@@ -60,7 +57,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     setState(() {
                       _currentIndex = index;
                     });
-              
                   },
                 ),
               ),
@@ -86,14 +82,18 @@ class _DashboardPageState extends State<DashboardPage> {
                 );
               }).toList(),
             ),
-            const SizedBox(
-              height: 20,
+ 
+            Padding(
+              padding: const EdgeInsets.only(top:10,bottom: 10),
+              child: Text(
+                "Status des compartiments",
+                style: optionStyle,
+              ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 CardWidget(
-                 
+                CardWidget(
                   temperature: "15",
                   title: "Refroidissement",
                 ),
@@ -109,24 +109,9 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(
               height: 20,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Status des produits",
-                  style: optionStyle,
-                ),
-                IconButton(
-
-                  onPressed: (){
-                  },
-                  icon: Icon(
-                    Icons.arrow_right,
-                    color: greenColor,
-                    size: 30,
-                  ),
-                ),
-              ],
+            Text(
+              "Status des produits",
+              style: optionStyle,
             ),
             const SizedBox(
               height: 10,

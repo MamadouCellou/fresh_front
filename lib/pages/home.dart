@@ -83,7 +83,7 @@ class _HomePageState extends State<HomePage> {
         if (mounted) {
           setState(() {
             _currentAddress = 
-                "${place.locality}";
+                "${place.name}";
           });
         }
       } catch (e) {
@@ -154,8 +154,8 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               Positioned(
-                right: 0,
-                top: 0,
+                right: 10,
+                top: 8,
                 child: Container(
                   width: 8,
                   height: 8,
