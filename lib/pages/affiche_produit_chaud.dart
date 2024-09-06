@@ -68,7 +68,7 @@ class _AfficueProduitChaudState extends State<AfficueProduitChaud> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  Get.to(ModifProduit());
+                  Get.to(ModifProduitFrais());
                 },
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all<Color>(Colors.green),

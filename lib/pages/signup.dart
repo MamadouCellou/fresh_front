@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:fresh_front/pages/home.dart';
+import 'package:path/path.dart' as path;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -20,6 +24,8 @@ class Signup extends StatefulWidget {
   @override
   State<Signup> createState() => _SignupState();
 }
+
+String copieIdDispo = "";
 
 class _SignupState extends State<Signup> {
   final _formKey = GlobalKey<FormBuilderState>();
@@ -61,7 +67,7 @@ class _SignupState extends State<Signup> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 100,bottom: 50),
+              padding: const EdgeInsets.only(top: 100, bottom: 50),
               child: Text(
                 "Informations de votre MandaFresh",
                 style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
@@ -108,6 +114,147 @@ class _SignupState extends State<Signup> {
           ],
         ),
       ),
+    );
+  }
+
+  void _registerUser() async {
+    if (_formKey.currentState?.saveAndValidate() ?? false) {
+      final email = _formKey.currentState?.fields['email']?.value;
+      final password = _formKey.currentState?.fields['password']?.value;
+      final nom = _formKey.currentState?.fields['nom']?.value;
+      final prenom = _formKey.currentState?.fields['prenom']?.value;
+      final dateNaissance =
+          _formKey.currentState?.fields['dateNaissance']?.value;
+      final profession = _formKey.currentState?.fields['profession']?.value;
+
+      // Affiche le loader
+      Get.dialog(
+        Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      try {
+        // 1. Création de l'utilisateur avec email et mot de passe
+        UserCredential userCredential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: email, password: password);
+
+        // 2. Upload de l'image de profil de l'utilisateur sur Firebase Storage
+        String imageUrl = '';
+        if (_imageFile != null) {
+          imageUrl =
+              await _uploadImageToFirebaseStorage(_imageFile!, prenom, email);
+        }
+
+        // 3. Sauvegarde des informations utilisateur dans Firestore
+        await FirebaseFirestore.instance
+            .collection('Utilisateurs')
+            .doc(userCredential.user?.uid)
+            .set({
+          'nom': nom,
+          'prenom': prenom,
+          'date_naissance': dateNaissance,
+          'email': email,
+          'genre': _selectedGenre,
+          'profession': profession,
+          'image': imageUrl,
+        });
+
+        // 4. Lier l'utilisateur au dispositif dans la collection Users_dispo
+        await FirebaseFirestore.instance.collection('Users_dispo').add({
+          'date': DateTime.now(),
+          'email_user': email,
+          'id_dispo': copieIdDispo,
+        });
+
+        Get.back();
+
+        showCustomSnackbar(
+          message: "Inscription réussie! Veillez vous connecter.",
+          type: "success",
+        );
+        Get.to(Login());
+      } catch (e) {
+        showCustomSnackbar(
+          message: "Erreur d'inscription: ${e.toString()}",
+          type: "error",
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  Future<String> _uploadImageToFirebaseStorage(
+      File imageFile, String userName, String email) async {
+    try {
+      // Détermination de l'extension du fichier
+      String extension = path.extension(imageFile.path);
+      if (extension.isEmpty) {
+        extension =
+            '.png'; // Définir une extension par défaut si aucune extension n'est trouvée
+      }
+
+      // Renommage de l'image avec le nom de l'utilisateur, son email et l'extension du fichier
+      String fileName = '${userName}_${email.split('@')[0]}$extension';
+      Reference storageReference =
+          FirebaseStorage.instance.ref().child('user_images/$fileName');
+
+      // Upload de l'image
+      UploadTask uploadTask = storageReference.putFile(imageFile);
+      TaskSnapshot taskSnapshot = await uploadTask;
+
+      // Récupération de l'URL de l'image uploadée
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      showCustomSnackbar(
+        message: "Erreur lors du téléchargement de l'image",
+        type: "error",
+      );
+      return '';
+    }
+  }
+
+  void showCustomSnackbar({
+    required String message,
+    required String type,
+    Color colorText = Colors.black,
+  }) {
+    Color backgroundColor;
+    IconData icon;
+
+    switch (type) {
+      case 'success':
+        backgroundColor = Colors.green;
+        icon = Icons.check_circle;
+        break;
+      case 'error':
+        backgroundColor = Colors.red;
+        icon = Icons.error;
+        break;
+      case 'info':
+      default:
+        backgroundColor = Colors.blue;
+        icon = Icons.info;
+    }
+
+    Get.rawSnackbar(
+      messageText: Row(
+        children: [
+          Icon(icon, color: Colors.white),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: colorText),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: backgroundColor,
+      snackPosition: SnackPosition.TOP,
+      borderRadius: 8,
+      margin: EdgeInsets.all(10),
+      duration: Duration(seconds: 3),
     );
   }
 
@@ -177,6 +324,7 @@ class _SignupState extends State<Signup> {
                         filled: true,
                         fillColor: Colors.black.withOpacity(0.1),
                         labelText: 'Votre genre',
+                        hintText: "Selectionner votre genre",
                         border: OutlineInputBorder(
                           borderSide: BorderSide.none,
                           borderRadius: BorderRadius.circular(10),
@@ -315,7 +463,7 @@ class _SignupState extends State<Signup> {
               padding:
                   EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 20),
               child: GFButton(
-                onPressed: () {},
+                onPressed: _registerUser,
                 shape: GFButtonShape.pills,
                 fullWidthButton: true,
                 textColor: Colors.white,
@@ -467,36 +615,71 @@ class _SignupState extends State<Signup> {
     });
   }
 
- void _verifyDeviceCredentials() async {
-  if (_deviceFormKey.currentState?.saveAndValidate() ?? false) {
-    final id = _deviceFormKey.currentState?.fields['identifiant']?.value;
-    final password = _deviceFormKey.currentState?.fields['motDePasseDispositif']?.value;
+  void _verifyDeviceCredentials() async {
+    if (_deviceFormKey.currentState?.saveAndValidate() ?? false) {
+      // Simuler la vérification des identifiants du dispositif
+      String identifiant =
+          _deviceFormKey.currentState?.fields['identifiant']?.value;
+      String motDePasseDispositif =
+          _deviceFormKey.currentState?.fields['motDePasseDispositif']?.value;
 
-    try {
-      // Référence à la collection "Dispositifs" dans Firestore
-      final QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('Dispositifs')
-          .where('id', isEqualTo: id)
-          .where('password', isEqualTo: password)
-          .get();
+      // Affiche le loader
+      Get.dialog(
+        Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
 
-      if (snapshot.docs.isNotEmpty) {
-        // Les identifiants du dispositif sont valides
+      // Vérification dans Firestore (remplacez avec votre logique réelle)
+      bool credentialsAreValid = await verifyCredentials(
+          identifiant, motDePasseDispositif); // Remplacer par la logique réelle
+
+      if (credentialsAreValid) {
+        Get.back();
         _pageController.nextPage(
           duration: Duration(milliseconds: 300),
           curve: Curves.easeIn,
         );
-        Get.snackbar("Succès", "Dispositif vérifié avec succès");
+        showCustomSnackbar(
+          message: "Dispositif vérifié avec succès!",
+          type: "success",
+        );
       } else {
-        // Les identifiants sont incorrects
-        Get.snackbar("Erreur", "Identifiants incorrects");
+        // Afficher une erreur si les identifiants sont incorrects
+        showCustomSnackbar(
+          message: "Identifiants incorrects, veuillez réessayer.",
+          type: "error",
+        );
       }
-    } catch (e) {
-      print('Erreur lors de la vérification des identifiants : $e');
-      Get.snackbar("Erreur", "Une erreur est survenue lors de la vérification");
     }
   }
-}
+
+  Future<bool> verifyCredentials(
+      String identifiant, String motDePasseDispositif) async {
+    try {
+      // Accéder à la collection 'Dispositifs' dans Firestore
+      final collection = FirebaseFirestore.instance.collection('Dispositifs');
+      // Chercher le document avec l'identifiant donné
+      final querySnapshot = await collection
+          .where('id', isEqualTo: identifiant)
+          .where('password', isEqualTo: motDePasseDispositif)
+          .get();
+
+      // Vérifier si un document correspondant a été trouvé
+      if (querySnapshot.docs.isNotEmpty) {
+        copieIdDispo = identifiant;
+        return true; // Les identifiants sont valides
+      } else {
+        return false; // Les identifiants sont invalides
+      }
+    } catch (e) {
+      // Afficher une erreur si quelque chose se passe mal
+      showCustomSnackbar(
+        message: "Erreur lors de la vérification des identifiants",
+        type: "error",
+      );
+      return false;
+    }
+  }
 
   Widget buildChamp(
       {required String name,

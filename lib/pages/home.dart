@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:fresh_front/pages/affiche_produit.dart';
-
 import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/gps.dart';
 import 'package:fresh_front/pages/login.dart';
@@ -12,6 +11,7 @@ import 'package:fresh_front/pages/reclage_select_compartiment.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:location/location.dart' as loc;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -26,9 +26,25 @@ class _HomePageState extends State<HomePage> {
   final loc.Location _location = loc.Location(); // Instance de Location
   late StreamSubscription<loc.LocationData> _locationSubscription;
 
+  String? userEmail;
+  String? userDeviceId;
+  String userFirstName = "";
+  String userLastName = "";
+  String userImage = "";
+
   @override
   void initState() {
     super.initState();
+
+    // Récupérer les arguments envoyés lors de la navigation
+    Map<String, dynamic> args = Get.arguments ?? {};
+    userEmail = args['email'] as String?;
+    userDeviceId = args['id_dispo'] as String?;
+
+    // Charger les informations de l'utilisateur depuis Firebase
+    _loadUserData();
+
+    // Initialiser les services de localisation
     _requestLocationPermission();
     _locationSubscription = _location.onLocationChanged.listen((loc.LocationData currentLocation) {
       if (mounted) {
@@ -82,8 +98,7 @@ class _HomePageState extends State<HomePage> {
 
         if (mounted) {
           setState(() {
-            _currentAddress = 
-                "${place.name}";
+            _currentAddress = "${place.name}";
           });
         }
       } catch (e) {
@@ -92,12 +107,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  bool isDarkMode = false;
+  Future<void> _loadUserData() async {
+    if (userEmail != null) {
+      // Récupérer les détails de l'utilisateur depuis Firestore
+      var snapshot = await FirebaseFirestore.instance
+          .collection('Utilisateurs')
+          .where('email', isEqualTo: userEmail)
+          .get();
 
+      if (snapshot.docs.isNotEmpty) {
+        setState(() {
+          userFirstName = snapshot.docs.first['prenom'];
+          userLastName = snapshot.docs.first['nom'];
+          userImage = snapshot.docs.first['image'];
+        });
+      }
+    }
+  }
+
+  bool isDarkMode = false;
   bool isProfile = false;
   bool isMandaFreshSelected = false;
   bool showAccounts = false;
-
   String selectedAccount = "Compte 1";
 
   static List<Widget> _widgetOptions = <Widget>[
@@ -113,8 +144,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,8 +151,7 @@ class _HomePageState extends State<HomePage> {
         leading: Builder(
           builder: (context) => IconButton(
             icon: Icon(Icons.menu), // Icône du menu
-            onPressed: () =>
-                Scaffold.of(context).openDrawer(), // Ouvre le Drawer
+            onPressed: () => Scaffold.of(context).openDrawer(), // Ouvre le Drawer
           ),
         ),
         title: GestureDetector(
@@ -182,11 +210,11 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: AssetImage('assets/images/cellou.jpg'),
+                        backgroundImage: userImage.isNotEmpty ? NetworkImage(userImage) : AssetImage('assets/images/default_avatar.png') as ImageProvider,
                       ),
                       SizedBox(height: 10),
                       Text(
-                        'Mamadou Cellou Diallo',
+                        '$userFirstName $userLastName',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -194,28 +222,18 @@ class _HomePageState extends State<HomePage> {
                       ),
                       SizedBox(height: 5),
                       Text(
-                        'cellou@gmail.com',
+                        userEmail ?? 'email inconnu',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey,
                         ),
                       ),
                       Divider(),
-                      paramItem(
-                          icon: Icons.settings, nom: "Paramètres", plus: true),
-                      // Divider(color: Colors.black.withOpacity(0.1),),
-                      paramItem(
-                          icon: Icons.menu_book,
-                          nom: "Guide de conservation",
-                          plus: true),
-                      paramItem(
-                          icon: Icons.person,
-                          nom: "Modifier profil",
-                          plus: true),
-                      paramItem(
-                          icon: Icons.feedback, nom: "Aide & commentaires"),
-                      paramItem(
-                          icon: Icons.share, nom: "Partager l'application")
+                      paramItem(icon: Icons.settings, nom: "Paramètres", plus: true),
+                      paramItem(icon: Icons.menu_book, nom: "Guide de conservation", plus: true),
+                      paramItem(icon: Icons.person, nom: "Modifier profil", plus: true),
+                      paramItem(icon: Icons.feedback, nom: "Aide & commentaires"),
+                      paramItem(icon: Icons.share, nom: "Partager l'application")
                     ],
                   ),
                   Column(
@@ -308,80 +326,96 @@ class _HomePageState extends State<HomePage> {
                                 icon: Icon(Icons.arrow_back),
                                 onPressed: _toggleView,
                               ),
-                              Expanded(
-                                child: Text(
-                                  "Changer de comptes",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: 23,
-                                      fontWeight: FontWeight.bold),
+                              Text(
+                                'Sélectionnez un compte',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
-                          )
-                        else
-                          Text(
-                            "Se déconnecter",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontSize: 23, fontWeight: FontWeight.bold),
                           ),
                         if (!showAccounts)
-                          ListTile(
-                            title: Text("Comptes MandaFresh",
-                                style: TextStyle(fontSize: 18)),
-                            subtitle: Text(
-                              selectedAccount,
-                              style: TextStyle(
-                                  fontSize: 16, color: Colors.grey[600]),
-                            ),
-                            trailing: Icon(Icons.arrow_right),
-                            onTap: _toggleView,
-                          ),
-                        if (!showAccounts)
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Get.to(Login());
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                    255,
-                                    240,
-                                    158,
-                                    158), // Utilisez 'backgroundColor' au lieu de 'primary'
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 30, vertical: 10),
-                              ),
-                              child: Text(
-                                "Se déconnecter",
+                          Row(
+                            children: [
+                              Text(
+                                'Déconnexion',
                                 style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
+                              Spacer(),
+                              TextButton(
+                                onPressed: () {
+                                  Get.off(Login());
+                                },
+                                child: Text(
+                                  'Déconnecter',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        SizedBox(height: 16),
+                        if (!showAccounts)
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundImage:
+                                    AssetImage('assets/images/default_avatar.png'),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: ListTile(
+                                  title: Text(selectedAccount),
+                                  subtitle: Text('Gestionnaire'),
+                                  onTap: _toggleView,
+                                  trailing: Icon(Icons.arrow_drop_down),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {},
+                                child: Text('Gérer'),
+                              ),
+                            ],
                           ),
                         if (showAccounts)
-                          Column(
-                            children: ["Compte 1", "Compte 2"]
-                                .map(
-                                  (account) => ListTile(
-                                    title: Text(account,
-                                        style: TextStyle(fontSize: 18)),
-                                    leading: Radio(
-                                      value: account,
-                                      groupValue: selectedAccount,
-                                      onChanged: (String? value) =>
-                                          _selectAccount(value!),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
+                          ...[
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage:
+                                    AssetImage('assets/images/default_avatar.png'),
+                              ),
+                              title: Text('Compte 1'),
+                              subtitle: Text('gestionnaire'),
+                              onTap: () {
+                                _selectAccount('Compte 1');
+                              },
+                              trailing: selectedAccount == 'Compte 1'
+                                  ? Icon(Icons.check, color: Colors.blue)
+                                  : null,
+                            ),
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage:
+                                    AssetImage('assets/images/default_avatar.png'),
+                              ),
+                              title: Text('Compte 2'),
+                              subtitle: Text('gestionnaire'),
+                              onTap: () {
+                                _selectAccount('Compte 2');
+                              },
+                              trailing: selectedAccount == 'Compte 2'
+                                  ? Icon(Icons.check, color: Colors.blue)
+                                  : null,
+                            ),
+                          ]
                       ],
                     ),
-                  ),
+                  )
                 ],
               ),
             );
@@ -391,19 +425,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget paramItem(
-      {required IconData icon,
-      required String nom,
-      bool plus = false,
-      dynamic go = AfficueProduit.new}) {
+  Widget paramItem({required IconData icon, required String nom, bool plus = false}) {
     return ListTile(
       leading: Icon(icon),
       title: Text(nom),
       trailing: plus ? Icon(Icons.arrow_right) : null,
-      onTap: () {
-        Navigator.pop(context);
-        plus ? Get.to((go)) : null;
-      },
     );
   }
 }

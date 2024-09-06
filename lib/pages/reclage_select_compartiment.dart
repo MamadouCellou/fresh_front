@@ -36,7 +36,7 @@ class ReclageSelectCompartiment extends StatelessWidget {
           ),
           const SizedBox(height: 10),
            Text(
-            'Bienvenue au reglage de votre MANDAFRESH, avec nous vos aliments seront conservés à temps réel',
+            'Bienvenue au reglage de votre MANDASMART, avec nous vos aliments seront conservés à temps réel',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,

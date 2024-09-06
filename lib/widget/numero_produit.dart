@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 // Widget Cellule
 class CelluleProduitsWidget extends StatelessWidget {
   final String imagePath;
-  final String name;
+  final String description;
   final int index; // Ajout d'un index pour afficher le numéro
 
   const CelluleProduitsWidget(
       {super.key,
       required this.imagePath,
-      required this.name,
+      required this.description,
       required this.index});
 
   @override
@@ -37,19 +37,33 @@ class CelluleProduitsWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 50,
-                    height: 50,
-                    child: Image.asset(imagePath),
+                    width: 60,
+                    height: 60,
+                    child: imagePath.isNotEmpty
+                        ? Image.network(
+                            imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Afficher l'image par défaut en cas d'erreur de chargement
+                              return Image.asset(
+                                'assets/images/pomme_noir.png',
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            'assets/images/pomme_noir.png',
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(left: 2, right: 2),
                     child: Text(
-                      '$name',
+                      '$description',
                       style: TextStyle(
-                        color: blackColor,
-                        fontSize: 10,
-                        overflow: TextOverflow.ellipsis
-                      ),
+                          color: blackColor,
+                          fontSize: 15,
+                          overflow: TextOverflow.ellipsis),
                     ),
                   ),
                 ],
