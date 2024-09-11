@@ -1,7 +1,13 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 class ModifProduitChaud extends StatefulWidget {
   const ModifProduitChaud({super.key});
@@ -13,25 +19,212 @@ class ModifProduitChaud extends StatefulWidget {
 final _formKey = GlobalKey<FormBuilderState>();
 
 class _ModifProduitChaudState extends State<ModifProduitChaud> {
-  // List of items for the dropdown
-  List<String> aliments = ['Orange', 'Pomme', 'Banane', 'Mangue'];
+  List<Map<String, dynamic>> aliments = [];
   String selectedAliment = '';
+  String? selectedAlimentId;
 
-  final arguments = Get.arguments as Map<String, dynamic>;
-  
+  Map<String, dynamic>? produitDetails;
+
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
+  String? categorieProduitActuel;
+  String? produitId;
+
+  // Pick image from gallery
+  Future<void> _pickImage() async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final args = Get.arguments as Map<String, dynamic>;
+    produitId = args['id'];
+    print("Id produit : $produitId");
+    fetchProduitData().then((_) {
+      // On récupère d'abord les détails du produit avant de récupérer les aliments
+      if (categorieProduitActuel != null) {
+        _fetchAlimentsFromFirestore();
+      }
+    });
+  }
+
+  Future<void> fetchProduitData() async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('ProduitsChauds')
+          .where('id', isEqualTo: produitId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        setState(() {
+          produitDetails = snapshot.docs.first.data() as Map<String, dynamic>;
+          categorieProduitActuel = produitDetails!['specifique_chaud'];
+        });
+        print("Categorie avant 2 : $categorieProduitActuel");
+      } else {
+        print("Aucun produit trouvé avec cet ID.");
+      }
+    } catch (e) {
+      print("Erreur lors de la récupération des détails du produit: $e");
+    }
+  }
+
+  Future<void> _fetchAlimentsFromFirestore() async {
+    try {
+      CollectionReference alimentsRef =
+          FirebaseFirestore.instance.collection('SpecifiqueProduitChaud');
+      QuerySnapshot querySnapshot = await alimentsRef.get();
+
+      setState(() {
+        aliments = querySnapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': data['id'].toString(), // Assurez-vous que l'ID est une chaîne
+            'nom': data['nom'],
+            'image': data['image'],
+          };
+        }).toList();
+
+        // Définir l'aliment sélectionné basé sur la catégorie du produit
+        if (categorieProduitActuel != null) {
+          final alimentActuel = aliments.firstWhere(
+            (aliment) => aliment['id'] == categorieProduitActuel,
+            orElse: () => aliments.isNotEmpty
+                ? aliments.first
+                : {'nom': 'Sélectionner un aliment'},
+          );
+          selectedAliment = alimentActuel['nom'];
+          selectedAlimentId = alimentActuel['id'];
+        } else if (aliments.isNotEmpty) {
+          // Initialiser la sélection avec le premier aliment si disponible
+          selectedAliment = aliments[0]['nom'];
+          selectedAlimentId = aliments[0]['id'];
+        }
+      });
+    } catch (e) {
+      print("Erreur lors de la récupération des aliments: $e");
+    }
+  }
+
+  Future<void> updateProduit() async {
+    if (_formKey.currentState?.saveAndValidate() ?? false) {
+      final values = _formKey.currentState?.value;
+      String imageUrl = produitDetails?['image'] ?? '';
+
+      // Vérifier s'il y a une nouvelle image à télécharger
+      if (_imageFile != null) {
+        imageUrl = await _uploadImage(_imageFile!);
+      }
+
+      Get.dialog(
+        Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      if (selectedAliment.isNotEmpty) {
+        final selectedAlimentData = aliments.firstWhere(
+          (aliment) => aliment['nom'] == selectedAliment,
+        );
+
+        try {
+          final produitRef = FirebaseFirestore.instance
+              .collection('ProduitsChauds')
+              .where('id', isEqualTo: produitId)
+              .limit(1);
+
+          final querySnapshot = await produitRef.get();
+
+          if (querySnapshot.docs.isNotEmpty) {
+            final docId = querySnapshot.docs.first.id;
+
+            await FirebaseFirestore.instance
+                .collection('ProduitsChauds')
+                .doc(docId)
+                .update({
+              'description': values?['description'] ?? '',
+              'dispositif': 'MANDA1',
+              'image': imageUrl,
+              'id': produitId,
+              'specifique_chaud': selectedAlimentId,
+              'modifie_a': formatTimestamp(Timestamp.now()),
+              'cree_a': produitDetails!['cree_a'].toString(),
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Produit modifié avec succès')),
+            );
+
+            Get.back();
+          } else {
+            Get.back();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Produit non trouvé')),
+            );
+          }
+        } catch (e) {
+          Get.back();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Erreur lors de la modification du produit')),
+          );
+          print("Erreur lors de la modification du produit: $e");
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Veuillez sélectionner un aliment')),
+        );
+      }
+    }
+  }
+
+  // Fonction pour formater un Timestamp en une chaîne de caractères lisible
+  String formatTimestamp(Timestamp timestamp) {
+    DateTime dateTime =
+        timestamp.toDate(); // Convertir le Timestamp en DateTime
+    return DateFormat('dd/MM/yyyy HH:mm:ss')
+        .format(dateTime); // Formater la date
+  }
+
+  Future<String> _uploadImage(File image) async {
+    try {
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference storageReference =
+          FirebaseStorage.instance.ref().child('user_images/$fileName');
+      UploadTask uploadTask = storageReference.putFile(image);
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String downloadURL = await taskSnapshot.ref.getDownloadURL();
+      return downloadURL;
+    } catch (e) {
+      print("Erreur lors de l'upload de l'image: $e");
+      return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (produitDetails == null) {
+      return Center(child: CircularProgressIndicator());
+    }
+
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Text(arguments['ajout'] ? "Ajoutez produit chaud": "Modifier produit chaud",
+          title: Text(
+            "Modifier produit chaud",
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
         body: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.spaceBetween, // Espace entre les widgets
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
               child: SingleChildScrollView(
@@ -51,8 +244,17 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                               border: Border.all(),
                               image: DecorationImage(
                                 fit: BoxFit.cover,
-                                image:
-                                    AssetImage("assets/images/orange.png"),
+                                image: (_imageFile != null)
+                                    ? FileImage(
+                                        _imageFile!) // Affiche l'image locale si elle est sélectionnée
+                                    : (produitDetails != null &&
+                                            produitDetails!['image'] != null &&
+                                            produitDetails!['image'].isNotEmpty)
+                                        ? NetworkImage(produitDetails![
+                                            'image']) // Affiche l'image à partir de l'URL si l'image locale n'est pas disponible
+                                        : AssetImage(
+                                                "assets/images/pomme_noir.png")
+                                            as ImageProvider,
                               ),
                             ),
                           ),
@@ -60,61 +262,53 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                             padding: const EdgeInsets.only(left: 2),
                             child: GestureDetector(
                               onTap: () {
-                                // Logique pour modifier l'image
+                                _pickImage();
                               },
                               child: Icon(Icons.edit),
                             ),
                           ),
                         ],
                       ),
-                      Padding(
-                padding: EdgeInsets.only(bottom: 10),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Color.fromRGBO(3, 75, 5, 1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '1',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+                      
                       // Dropdown for selecting aliment
                       FormBuilderDropdown<String>(
                         name: 'aliment',
-                        initialValue: selectedAliment,
+                        initialValue:
+                            selectedAliment.isNotEmpty ? selectedAliment : null,
                         decoration: InputDecoration(
-                          labelText: "Choisir type d'aliment",
+                          labelText: 'Aliment',
                           border: OutlineInputBorder(),
                         ),
-                        items: aliments.map((String value) {
+                        items: aliments.map((aliment) {
                           return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
+                            value: aliment['nom'],
+                            child: Text(aliment['nom']),
                           );
                         }).toList(),
-                        onChanged: (String? newValue) {
+                        onChanged: (value) {
                           setState(() {
-                            selectedAliment = newValue!;
+                            selectedAliment = value ?? '';
+                            selectedAlimentId = aliments.firstWhere(
+                              (aliment) => aliment['nom'] == selectedAliment,
+                              orElse: () => {'id': '', 'nom': ''},
+                            )['id'];
                           });
                         },
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(),
+                        ]),
                       ),
-                      SizedBox(height: 20),
-                      // Editable fields
-                      buildEditableField(
-                          'Prix du produit', 'prix', TextInputType.number),
                       SizedBox(height: 10),
-                      buildEditableField(
-                          'Description', 'description', TextInputType.text),
+                      FormBuilderTextField(
+                        name: 'description',
+                        initialValue: produitDetails?['description'] ?? '',
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      
                     ],
                   ),
                 ),
@@ -128,8 +322,7 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                 ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.saveAndValidate()) {
-                      final values = _formKey.currentState!.value;
-                      print("Modifications sauvegardées avec valeurs: $values");
+                      updateProduit();
 
                       ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Produit modifié')));
@@ -157,7 +350,7 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                       Icon(Icons.edit, color: Colors.white),
                       SizedBox(width: 10),
                       Text(
-                        arguments['ajout'] ? "Ajoutez": "Modifier",
+                        "Modifier",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -172,7 +365,7 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                     _formKey.currentState!.reset();
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(arguments['ajout'] ? "Ajoutez annulé": "Modification annulée")),
+                      SnackBar(content: Text('Modification annulée')),
                     );
 
                     Get.back();
@@ -213,20 +406,6 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
           ],
         ),
       ),
-    );
-  }
-
-  // Function to build an editable field using FormBuilder
-  Widget buildEditableField(
-      String label, String name, TextInputType inputType) {
-    return FormBuilderTextField(
-      name: name,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-      ),
-      keyboardType: inputType,
-      validator: FormBuilderValidators.required(),
     );
   }
 }

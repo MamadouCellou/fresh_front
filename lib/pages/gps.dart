@@ -78,7 +78,7 @@ class _MapPageState extends State<MapPage> {
         if (mounted) {
           setState(() {
             _currentAddress =
-                "${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+                "${place.name}, ${place.locality}, ${place.administrativeArea}";
           });
         }
       } catch (e) {
@@ -99,7 +99,7 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Position du dispositif"),
+        title: Text("Position du dispositif", style: TextStyle(fontWeight: FontWeight.bold),),
       ),
       body: _currentLocation == null
           ? Center(child: CircularProgressIndicator())

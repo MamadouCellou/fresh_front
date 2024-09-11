@@ -2,6 +2,7 @@ import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -58,22 +59,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Align(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: () {
-                      Get.to(Login());
-                    },
-                    child: Text(
-                      "Sauter",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                        fontSize: 15,
-                        decoration: TextDecoration.none,
-                      ),
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () {
+                    Get.to(Login());
+                  },
+                  child: Text(
+                    "Sauter",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                      fontSize: 15,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
+              ),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -123,7 +124,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                     (currentPageIndex == totalDots - 1)
                         ? ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+
+                              await prefs.setBool('firstUse', true);
                               Get.to(Login());
                             },
                             child: Text("S'authentifier"))

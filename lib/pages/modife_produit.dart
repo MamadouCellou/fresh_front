@@ -7,6 +7,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 class ModifProduitFrais extends StatefulWidget {
   const ModifProduitFrais({super.key});
@@ -66,7 +67,7 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
       if (snapshot.docs.isNotEmpty) {
         setState(() {
           produitDetails = snapshot.docs.first.data() as Map<String, dynamic>;
-          categorieProduitActuel = produitDetails!['categorie_produit'];
+          categorieProduitActuel = produitDetails!['specifique_frais'];
         });
         print("Categorie avant 2 : $categorieProduitActuel");
       } else {
@@ -97,7 +98,9 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
         if (categorieProduitActuel != null) {
           final alimentActuel = aliments.firstWhere(
             (aliment) => aliment['id'] == categorieProduitActuel,
-            orElse: () => aliments.isNotEmpty ? aliments.first : {'nom': 'Sélectionner un aliment'},
+            orElse: () => aliments.isNotEmpty
+                ? aliments.first
+                : {'nom': 'Sélectionner un aliment'},
           );
           selectedAliment = alimentActuel['nom'];
           selectedAlimentId = alimentActuel['id'];
@@ -152,9 +155,9 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
               'image': imageUrl,
               'prix': values?['prix'] ?? '0',
               'id': produitId,
-              'categorie_produit': selectedAlimentId,
-              'modifie_a': Timestamp.now(),
-              'cree_a': produitDetails!['cree_a'],
+              'specifique_frais': selectedAlimentId,
+              'modifie_a': formatTimestamp(Timestamp.now()),
+              'cree_a': produitDetails!['cree_a'].toString(),
             });
 
             ScaffoldMessenger.of(context).showSnackBar(
@@ -171,7 +174,8 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
         } catch (e) {
           Get.back();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur lors de la modification du produit')),
+            SnackBar(
+                content: Text('Erreur lors de la modification du produit')),
           );
           print("Erreur lors de la modification du produit: $e");
         }
@@ -181,6 +185,14 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
         );
       }
     }
+  }
+
+  // Fonction pour formater un Timestamp en une chaîne de caractères lisible
+  String formatTimestamp(Timestamp timestamp) {
+    DateTime dateTime =
+        timestamp.toDate(); // Convertir le Timestamp en DateTime
+    return DateFormat('dd/MM/yyyy HH:mm:ss')
+        .format(dateTime); // Formater la date
   }
 
   Future<String> _uploadImage(File image) async {
@@ -197,8 +209,6 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
       return '';
     }
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -235,11 +245,17 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
                               border: Border.all(),
                               image: DecorationImage(
                                 fit: BoxFit.cover,
-                                image: (produitDetails != null &&
-                                        produitDetails!['image'] != null &&
-                                        produitDetails!['image'].isNotEmpty)
-                                    ? NetworkImage(produitDetails!['image'])
-                                    : AssetImage("assets/images/pomme_noir.png"),
+                                image: (_imageFile != null)
+                                    ? FileImage(
+                                        _imageFile!) // Affiche l'image locale si elle est sélectionnée
+                                    : (produitDetails != null &&
+                                            produitDetails!['image'] != null &&
+                                            produitDetails!['image'].isNotEmpty)
+                                        ? NetworkImage(produitDetails![
+                                            'image']) // Affiche l'image à partir de l'URL si l'image locale n'est pas disponible
+                                        : AssetImage(
+                                                "assets/images/pomme_noir.png")
+                                            as ImageProvider,
                               ),
                             ),
                           ),
@@ -278,7 +294,8 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
                       // Dropdown for selecting aliment
                       FormBuilderDropdown<String>(
                         name: 'aliment',
-                        initialValue: selectedAliment.isNotEmpty ? selectedAliment : null,
+                        initialValue:
+                            selectedAliment.isNotEmpty ? selectedAliment : null,
                         decoration: InputDecoration(
                           labelText: 'Aliment',
                           border: OutlineInputBorder(),
@@ -330,7 +347,7 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
                 ),
               ),
             ),
-              SizedBox(height: 20), // Espace entre le contenu et les boutons
+            SizedBox(height: 20), // Espace entre le contenu et les boutons
             // Row containing buttons 'Modifier' and 'Annuler'
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -419,7 +436,6 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
               ],
             ),
             SizedBox(height: 20), // Espace en bas de l'écran
-          
           ],
         ),
       ),

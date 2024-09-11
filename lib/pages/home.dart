@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fresh_front/pages/affiche_produit.dart';
 import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/gps.dart';
@@ -46,7 +47,8 @@ class _HomePageState extends State<HomePage> {
 
     // Initialiser les services de localisation
     _requestLocationPermission();
-    _locationSubscription = _location.onLocationChanged.listen((loc.LocationData currentLocation) {
+    _locationSubscription =
+        _location.onLocationChanged.listen((loc.LocationData currentLocation) {
       if (mounted) {
         setState(() {
           _currentLocation = currentLocation;
@@ -58,7 +60,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _locationSubscription.cancel(); // Annule l'abonnement lorsque le widget est détruit
+    _locationSubscription
+        .cancel(); // Annule l'abonnement lorsque le widget est détruit
     super.dispose();
   }
 
@@ -98,7 +101,7 @@ class _HomePageState extends State<HomePage> {
 
         if (mounted) {
           setState(() {
-            _currentAddress = "${place.name}";
+            _currentAddress = "${place.locality}";
           });
         }
       } catch (e) {
@@ -151,7 +154,8 @@ class _HomePageState extends State<HomePage> {
         leading: Builder(
           builder: (context) => IconButton(
             icon: Icon(Icons.menu), // Icône du menu
-            onPressed: () => Scaffold.of(context).openDrawer(), // Ouvre le Drawer
+            onPressed: () =>
+                Scaffold.of(context).openDrawer(), // Ouvre le Drawer
           ),
         ),
         title: GestureDetector(
@@ -210,7 +214,10 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: userImage.isNotEmpty ? NetworkImage(userImage) : AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                        backgroundImage: userImage.isNotEmpty
+                            ? NetworkImage(userImage)
+                            : AssetImage('assets/images/default_avatar.png')
+                                as ImageProvider,
                       ),
                       SizedBox(height: 10),
                       Text(
@@ -229,11 +236,20 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       Divider(),
-                      paramItem(icon: Icons.settings, nom: "Paramètres", plus: true),
-                      paramItem(icon: Icons.menu_book, nom: "Guide de conservation", plus: true),
-                      paramItem(icon: Icons.person, nom: "Modifier profil", plus: true),
-                      paramItem(icon: Icons.feedback, nom: "Aide & commentaires"),
-                      paramItem(icon: Icons.share, nom: "Partager l'application")
+                      paramItem(
+                          icon: Icons.settings, nom: "Paramètres", plus: true),
+                      paramItem(
+                          icon: Icons.menu_book,
+                          nom: "Guide de conservation",
+                          plus: true),
+                      paramItem(
+                          icon: Icons.person,
+                          nom: "Modifier profil",
+                          plus: true),
+                      paramItem(
+                          icon: Icons.feedback, nom: "Aide & commentaires"),
+                      paramItem(
+                          icon: Icons.share, nom: "Partager l'application")
                     ],
                   ),
                   Column(
@@ -347,7 +363,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                               Spacer(),
                               TextButton(
-                                onPressed: () {
+                                onPressed: () async {
+                                  await FirebaseAuth.instance.signOut();
                                   Get.off(Login());
                                 },
                                 child: Text(
@@ -364,8 +381,8 @@ class _HomePageState extends State<HomePage> {
                           Row(
                             children: [
                               CircleAvatar(
-                                backgroundImage:
-                                    AssetImage('assets/images/default_avatar.png'),
+                                backgroundImage: AssetImage(
+                                    'assets/images/default_avatar.png'),
                               ),
                               SizedBox(width: 8),
                               Expanded(
@@ -382,37 +399,36 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ],
                           ),
-                        if (showAccounts)
-                          ...[
-                            ListTile(
-                              leading: CircleAvatar(
-                                backgroundImage:
-                                    AssetImage('assets/images/default_avatar.png'),
-                              ),
-                              title: Text('Compte 1'),
-                              subtitle: Text('gestionnaire'),
-                              onTap: () {
-                                _selectAccount('Compte 1');
-                              },
-                              trailing: selectedAccount == 'Compte 1'
-                                  ? Icon(Icons.check, color: Colors.blue)
-                                  : null,
+                        if (showAccounts) ...[
+                          ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/default_avatar.png'),
                             ),
-                            ListTile(
-                              leading: CircleAvatar(
-                                backgroundImage:
-                                    AssetImage('assets/images/default_avatar.png'),
-                              ),
-                              title: Text('Compte 2'),
-                              subtitle: Text('gestionnaire'),
-                              onTap: () {
-                                _selectAccount('Compte 2');
-                              },
-                              trailing: selectedAccount == 'Compte 2'
-                                  ? Icon(Icons.check, color: Colors.blue)
-                                  : null,
+                            title: Text('Compte 1'),
+                            subtitle: Text('gestionnaire'),
+                            onTap: () {
+                              _selectAccount('Compte 1');
+                            },
+                            trailing: selectedAccount == 'Compte 1'
+                                ? Icon(Icons.check, color: Colors.blue)
+                                : null,
+                          ),
+                          ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/default_avatar.png'),
                             ),
-                          ]
+                            title: Text('Compte 2'),
+                            subtitle: Text('gestionnaire'),
+                            onTap: () {
+                              _selectAccount('Compte 2');
+                            },
+                            trailing: selectedAccount == 'Compte 2'
+                                ? Icon(Icons.check, color: Colors.blue)
+                                : null,
+                          ),
+                        ]
                       ],
                     ),
                   )
@@ -425,7 +441,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget paramItem({required IconData icon, required String nom, bool plus = false}) {
+  Widget paramItem(
+      {required IconData icon, required String nom, bool plus = false}) {
     return ListTile(
       leading: Icon(icon),
       title: Text(nom),

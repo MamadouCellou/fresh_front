@@ -1,14 +1,14 @@
 import 'package:fresh_front/constant/colors.dart';
+import 'package:fresh_front/pages/auth.dart';
 import 'package:fresh_front/pages/onboarding.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-
-  WidgetsFlutterBinding.ensureInitialized();  
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -17,27 +17,48 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool launched = true; // Initialiser à 'true' par défaut
+
+  @override
+  void initState() {
+    super.initState();
+    checkUse(); // Appeler une méthode asynchrone
+  }
+
+  // Vérifie si c'est le premier lancement de l'application
+  void checkUse() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isFirstLaunch = prefs.getBool('launched') ?? false;
+    if (!isFirstLaunch) {
+      await prefs.setBool('launched', true);
+    }
+    setState(() {
+      launched = isFirstLaunch; // Met à jour l'état après la récupération
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'App MandaFresh',
+      title: 'App MandaSmart',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // bottomSheetTheme: BottomSheetThemeData(backgroundColor: Colors.transparent),
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          selectedItemColor:
-              greenColor, // Couleur des icônes et labels sélectionnés
-          unselectedItemColor:
-              greyColor, // Couleur des icônes et labels non sélectionnés
+          selectedItemColor: greenColor,
+          unselectedItemColor: greyColor,
           selectedLabelStyle: TextStyle(color: greenColor),
           unselectedLabelStyle: TextStyle(color: greyColor),
         ),
       ),
-      home: WelcomeScreen(),
+      home: launched ? AuthWrapper() : WelcomeScreen(), // Redirige vers la page appropriée
     );
   }
 }

@@ -127,17 +127,17 @@ class _AfficueProduitFraisState extends State<AfficueProduitFrais> {
                   propieteProduit(
                     titre: "Type d'aliment",
                     sousTitre:
-                        produitDetails['categorie_produit'] ?? 'Non disponible',
+                        produitDetails['specifique_frais'] ?? 'Non disponible',
                   ),
                   Divider(),
                   propieteProduit(
                     titre: "Date d'ajout",
-                    sousTitre: formatDate(produitDetails['cree_a']),
+                    sousTitre: produitDetails['cree_a'],
                   ),
                   Divider(),
                   propieteProduit(
-                    titre: "Dernière modification",
-                    sousTitre: formatDate(produitDetails['modifie_a']),
+                    titre: "Date modification",
+                    sousTitre: produitDetails['modifie_a'],
                   ),
                 ],
               ),

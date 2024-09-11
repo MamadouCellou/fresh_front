@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/affiche_produit.dart';
-import 'package:fresh_front/pages/affiche_produit_chaud.dart';
 import 'package:fresh_front/pages/ajout_produit_frais.dart';
 import 'package:fresh_front/pages/modife_produit.dart';
 import 'package:fresh_front/widget/card_widget.dart';
@@ -22,32 +21,27 @@ class _PageFroidProductState extends State<PageFroidProduct> {
     return Scaffold(
       appBar: null,
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance.collection('ProduitsFrais').snapshots(),
+        stream: FirebaseFirestore.instance.collection('ProduitsFrais').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
-            return Center(
-                child: Text('Erreur lors de la récupération des produits'));
+            return Center(child: Text('Erreur lors de la récupération des produits'));
           }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('Aucun produit trouvé'));
-          }
-
-          // Convertir les données en une liste de produits
+          // Initialiser une liste pour les produits, remplie avec des valeurs par défaut
           List<Map<String, dynamic>> produits = List.generate(
             12,
             (index) => {
               'id': (index + 1).toString(),
-              'image': '',
-              'description': 'Non présent',
+              'image': '', // Image vide par défaut
+              'description': 'Non présent', // Description par défaut
             },
           );
 
+          // Mettre à jour la liste avec les produits récupérés depuis Firestore
           for (var doc in snapshot.data!.docs) {
             final data = doc.data() as Map<String, dynamic>;
             int id = int.parse(data['id']);
@@ -55,9 +49,8 @@ class _PageFroidProductState extends State<PageFroidProduct> {
             if (id > 0 && id <= 12) {
               produits[id - 1] = {
                 'id': data['id'],
-                'image': data[
-                    'image'], // Assurez-vous que l'image est bien référencée
-                'description': data['description'],
+                'image': data['image'] ?? '', // Assurez-vous que l'image est bien référencée
+                'description': data['description'] ?? 'Non présent',
               };
             }
           }
@@ -79,18 +72,14 @@ class _PageFroidProductState extends State<PageFroidProduct> {
                     ),
                   ],
                 ),
-                const SizedBox(
-                  height: 10,
-                ),
+                const SizedBox(height: 10),
                 const CardWidget(
                   height: 100,
                   width: 200,
                   temperature: "30",
                   title: "Temperature actuelle",
                 ),
-                const SizedBox(
-                  height: 15,
-                ),
+                const SizedBox(height: 15),
                 Row(
                   children: [
                     Text(
@@ -103,9 +92,7 @@ class _PageFroidProductState extends State<PageFroidProduct> {
                     ),
                   ],
                 ),
-                const SizedBox(
-                  height: 15,
-                ),
+                const SizedBox(height: 15),
                 _buildAnimatedContainer(
                   _isExpandedFroidProduits,
                   _buildProduitGrid(produits),
@@ -147,19 +134,18 @@ class _PageFroidProductState extends State<PageFroidProduct> {
 
         // Vérification du chemin de l'image. Utilisez une image par défaut si vide ou non trouvée.
         if (image.isEmpty) {
-          image =
-              'assets/images/pomme_noir.png'; // Chemin de l'image par défaut
+          image = 'assets/images/pomme_noir.png'; // Chemin de l'image par défaut
         }
 
         return GestureDetector(
           onTap: () {
             // Gérer l'affichage du produit
             isPresent
-                ? Get.to(arguments: {'id': index}, (AfficueProduitFrais()))
+                ? Get.to(AfficueProduitFrais(), arguments: {'id': index})
                 : ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            "Cette cellule ne contient aucun produit, veillez-en ajouter")),
+                      content: Text("Cette cellule ne contient aucun produit, veuillez en ajouter."),
+                    ),
                   );
           },
           onLongPress: () {
@@ -194,16 +180,15 @@ class _PageFroidProductState extends State<PageFroidProduct> {
                   Navigator.of(context).pop(); // Fermer la boîte de dialogue
 
                   isPresent
-                      ? Get.to(arguments: {'id': index}, ModifProduitFrais())
-                      : Get.to(arguments: {'id': index}, AjoutProduitFrais());
+                      ? Get.to(ModifProduitFrais(), arguments: {'id': index})
+                      : Get.to(AjoutProduitFrais(), arguments: {'id': index});
                 },
                 child: Text(isPresent ? 'Modifier' : 'Ajouter'),
               ),
               isPresent
                   ? TextButton(
                       onPressed: () {
-                        Navigator.of(context)
-                            .pop(); // Fermer la boîte de dialogue
+                        Navigator.of(context).pop(); // Fermer la boîte de dialogue
                         showDeleteConfirmationDialog((index + 1).toString());
                       },
                       child: Text('Supprimer'),

@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+
 
 class AjoutProduitFrais extends StatefulWidget {
   const AjoutProduitFrais({super.key});
@@ -115,9 +117,9 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
             'id': produitId,
             'image': imageUrl,
             'prix': values?['prix'] ?? '',
-            'categorie_produit': selectedAlimentData['categorie_produit'],
-            'cree_a': Timestamp.now(),
-            'modifie_a': Null,
+            'specifique_frais': selectedAlimentData['categorie_produit'],
+            'cree_a': formatTimestamp(Timestamp.now()),
+            'modifie_a': "Non modifié",
           });
 
           Get.back();
@@ -131,6 +133,14 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
         }
       }
     }
+  }
+
+  // Fonction pour formater un Timestamp en une chaîne de caractères lisible
+  String formatTimestamp(Timestamp timestamp) {
+    DateTime dateTime =
+        timestamp.toDate(); // Convertir le Timestamp en DateTime
+    return DateFormat('dd/MM/yyyy HH:mm:ss')
+        .format(dateTime); // Formater la date
   }
 
   @override
