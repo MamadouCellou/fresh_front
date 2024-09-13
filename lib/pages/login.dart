@@ -41,7 +41,7 @@ class _LoginState extends State<Login> {
         // Rediriger vers la page d'accueil après la connexion réussie
         String? id_dispo = await fetchAndStoreUserDeviceId(email);
 
-        Get.to(arguments: {'email': email, 'id_dispo': id_dispo}, HomePage());
+        Get.to(HomePage());
 
         showCustomSnackbar(
           message: "Connexion réussie!",

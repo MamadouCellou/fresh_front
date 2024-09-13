@@ -15,6 +15,8 @@ import 'package:location/location.dart' as loc;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
+
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -38,9 +40,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     // Récupérer les arguments envoyés lors de la navigation
-    Map<String, dynamic> args = Get.arguments ?? {};
-    userEmail = args['email'] as String?;
-    userDeviceId = args['id_dispo'] as String?;
+    userEmail = FirebaseAuth.instance.currentUser?.email ?? 'Email non disponible';;
 
     // Charger les informations de l'utilisateur depuis Firebase
     _loadUserData();

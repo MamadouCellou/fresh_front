@@ -46,7 +46,7 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
   void initState() {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>;
-    produitId = (args['id'] + 1).toString();
+    produitId = args['id'];
     print("Id produit : $produitId");
     fetchProduitData().then((_) {
       // On récupère d'abord les détails du produit avant de récupérer les aliments
@@ -153,7 +153,6 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
               'description': values?['description'] ?? '',
               'dispositif': 'MANDA1',
               'image': imageUrl,
-              'prix': values?['prix'] ?? '0',
               'id': produitId,
               'specifique_frais': selectedAlimentId,
               'modifie_a': formatTimestamp(Timestamp.now()),
@@ -327,20 +326,6 @@ class _ModifProduitFraisState extends State<ModifProduitFrais> {
                           labelText: 'Description',
                           border: OutlineInputBorder(),
                         ),
-                      ),
-                      SizedBox(height: 10),
-                      FormBuilderTextField(
-                        name: 'prix',
-                        initialValue: produitDetails?['prix'] ?? '',
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Prix',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.numeric(),
-                        ]),
                       ),
                     ],
                   ),

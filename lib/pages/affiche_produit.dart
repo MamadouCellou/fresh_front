@@ -31,7 +31,7 @@ class _AfficueProduitFraisState extends State<AfficueProduitFrais> {
   void initState() {
     super.initState();
 
-    idProduit = (args['id'] + 1).toString();
+    idProduit = args['id'];
 
     print("Id produit : $idProduit");
 
@@ -119,11 +119,7 @@ class _AfficueProduitFraisState extends State<AfficueProduitFrais> {
                         produitDetails['description'] ?? 'Non disponible',
                   ),
                   Divider(),
-                  propieteProduit(
-                    titre: "Prix du produit",
-                    sousTitre: "${produitDetails['prix'] ?? 'N/A'} GNF",
-                  ),
-                  Divider(),
+                  
                   propieteProduit(
                     titre: "Type d'aliment",
                     sousTitre:
@@ -264,12 +260,12 @@ class _AfficueProduitFraisState extends State<AfficueProduitFrais> {
 
       if (snapshot.docs.isNotEmpty) {
         // Supposons qu'il y a un seul document correspondant
+        Get.back();
         DocumentReference docRef = snapshot.docs.first.reference;
         await docRef.delete();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Produit $productId supprimé avec succès')),
         );
-        Get.back();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Aucun produit trouvé pour cet ID')),

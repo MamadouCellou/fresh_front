@@ -8,7 +8,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-
 class AjoutProduitFrais extends StatefulWidget {
   const AjoutProduitFrais({super.key});
 
@@ -21,8 +20,10 @@ final _formKey = GlobalKey<FormBuilderState>();
 class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
   List<Map<String, dynamic>> aliments = [];
   String selectedAliment = '';
+  String selectedImageUrl = ''; // Stocke l'URL de l'image sélectionnée
 
-  File? _imageFile;
+  String specifique_frais = '';
+  File? _imageFile; // Image sélectionnée par l'utilisateur
   final ImagePicker _picker = ImagePicker();
 
   String? produitId;
@@ -31,9 +32,8 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
   void initState() {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>;
-    produitId = (args['id'] + 1).toString();
+    produitId = args['id'];
     print("Id produit : $produitId");
-    _fetchAlimentsFromFirestore();
     _fetchAlimentsFromFirestore();
   }
 
@@ -51,12 +51,17 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
           'id': data['id'].toString(),
           'nom': data['nom'],
           'categorie_produit': data['categorie_produit'],
+          'image': data['image'], // Ajouter le champ image ici
         });
       }
       setState(() {
         aliments = fetchedAliments;
         if (aliments.isNotEmpty) {
+          // Sélectionner le premier aliment et mettre à jour l'image
           selectedAliment = aliments.first['nom'];
+          selectedImageUrl =
+              aliments.first['image']; // Charger l'image du premier aliment
+              specifique_frais = aliments.first['id'];
         }
       });
     } catch (e) {
@@ -64,83 +69,82 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
     }
   }
 
-  // Pick image from gallery
-  Future<void> _pickImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
+  // Mettre à jour l'image lorsque l'aliment sélectionné change
+  void _onAlimentChanged(String? newValue) {
+    setState(() {
+      selectedAliment = newValue!;
+      final selectedAlimentData =
+          aliments.firstWhere((aliment) => aliment['nom'] == selectedAliment);
+      selectedImageUrl =
+          selectedAlimentData['image']; // Mettre à jour l'image correspondante
+          specifique_frais = selectedAlimentData['id'];
+          print("Le specifique_frais : "+specifique_frais);
+    });
   }
 
-  // Upload image to Firebase Storage
-  Future<String> _uploadImage(File image) async {
-    try {
-      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      Reference storageReference =
-          FirebaseStorage.instance.ref().child('user_images/$fileName');
-      UploadTask uploadTask = storageReference.putFile(image);
-      TaskSnapshot taskSnapshot = await uploadTask;
-      String downloadURL = await taskSnapshot.ref.getDownloadURL();
-      return downloadURL;
-    } catch (e) {
-      print("Erreur lors de l'upload de l'image: $e");
-      return '';
-    }
-  }
-
-  // Save product to Firestore
+  // Fonction pour enregistrer le produit dans Firebase
   Future<void> _saveProduct() async {
-    if (_formKey.currentState?.saveAndValidate() ?? false) {
-      final values = _formKey.currentState?.value;
-      String imageUrl = '';
+  final form = _formKey.currentState;
+  if (form != null && form.validate()) {
+    form.save();
 
+    try {
+      String imageUrl;
       if (_imageFile != null) {
-        imageUrl = await _uploadImage(_imageFile!);
+        imageUrl = await _uploadImageToFirebase(_imageFile!);
+      } else {
+        imageUrl = selectedImageUrl ?? ''; // Utiliser une valeur par défaut si selectedImageUrl est null
       }
 
-      Get.dialog(
-        Center(child: CircularProgressIndicator()),
-        barrierDismissible: false,
+      final prix = form.fields['prix']?.value ?? ''; // Valeur par défaut pour prix
+      final description = form.fields['description']?.value ?? ''; // Valeur par défaut pour description
+
+      await FirebaseFirestore.instance.collection('ProduitsFrais').add({
+        'id': produitId ?? '', 
+        'prix': prix,
+        'description': description,
+        'image': imageUrl, 
+        'specifique_frais': specifique_frais, 
+        'cree_a': formatTimestamp(Timestamp.now()), 
+        'modifie_a': "Non modifié", 
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Produit ajouté avec succès')),
       );
 
-      if (selectedAliment.isNotEmpty) {
-        final selectedAlimentData =
-            aliments.firstWhere((aliment) => aliment['nom'] == selectedAliment);
-
-        try {
-          await FirebaseFirestore.instance.collection('ProduitsFrais').add({
-            'description': values?['description'] ?? '',
-            'dispositif': 'MANDA1', // Example, you can adjust as needed
-            'id': produitId,
-            'image': imageUrl,
-            'prix': values?['prix'] ?? '',
-            'specifique_frais': selectedAlimentData['categorie_produit'],
-            'cree_a': formatTimestamp(Timestamp.now()),
-            'modifie_a': "Non modifié",
-          });
-
-          Get.back();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Produit ajouté avec succès')),
-          );
-          Get.back();
-        } catch (e) {
-          print("Erreur lors de l'ajout du produit: $e");
-        }
-      }
+      Get.back();
+    } catch (e) {
+      print("Erreur lors de l'ajout du produit: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de l\'ajout du produit')),
+      );
     }
+  } else {
+    print("Formulaire est null ou non valide");
   }
+}
 
-  // Fonction pour formater un Timestamp en une chaîne de caractères lisible
   String formatTimestamp(Timestamp timestamp) {
     DateTime dateTime =
         timestamp.toDate(); // Convertir le Timestamp en DateTime
     return DateFormat('dd/MM/yyyy HH:mm:ss')
         .format(dateTime); // Formater la date
+  }
+
+
+  Future<String> _uploadImageToFirebase(File imageFile) async {
+    try {
+      String fileName = 'images/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child(fileName);
+      UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+      TaskSnapshot taskSnapshot = await uploadTask;
+
+      return await taskSnapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Erreur lors du téléchargement de l\'image: $e');
+    }
   }
 
   @override
@@ -167,7 +171,8 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           GestureDetector(
-                            onTap: _pickImage,
+                            onTap:
+                                _pickImage, // L'utilisateur peut toujours choisir une autre image
                             child: Container(
                               height: 250,
                               width: 230,
@@ -178,8 +183,10 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                                   fit: BoxFit.cover,
                                   image: _imageFile != null
                                       ? FileImage(_imageFile!)
-                                      : AssetImage(
-                                              "assets/images/pomme_noir.png")
+                                      : (selectedImageUrl.isNotEmpty
+                                              ? NetworkImage(selectedImageUrl)
+                                              : AssetImage(
+                                                  "assets/images/pomme_noir.png"))
                                           as ImageProvider,
                                 ),
                               ),
@@ -205,7 +212,7 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                           ),
                           child: Center(
                             child: Text(
-                              produitId!, // Example, replace with dynamic value if needed
+                              produitId!,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -215,7 +222,7 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                           ),
                         ),
                       ),
-                      // Dropdown for selecting aliment
+                      // Dropdown pour sélectionner l'aliment
                       FormBuilderDropdown<String>(
                         name: 'aliment',
                         initialValue: selectedAliment,
@@ -229,17 +236,11 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                             child: Text(aliment['nom']),
                           );
                         }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedAliment = newValue!;
-                          });
-                        },
+                        onChanged:
+                            _onAlimentChanged, // Appeler la fonction lorsque la sélection change
                       ),
                       SizedBox(height: 20),
-                      // Editable fields
-                      buildEditableField(
-                          'Prix du produit', 'prix', TextInputType.number),
-                      SizedBox(height: 10),
+
                       buildEditableField(
                           'Description', 'description', TextInputType.text),
                     ],
@@ -248,7 +249,6 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
               ),
             ),
             SizedBox(height: 20),
-            // Row containing buttons 'Ajouter' and 'Annuler'
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -311,7 +311,7 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.cancel, color: Colors.white),
+                      Icon(Icons.close, color: Colors.white),
                       SizedBox(width: 10),
                       Text(
                         "Annuler",
@@ -326,14 +326,22 @@ class _AjoutProduitFraisState extends State<AjoutProduitFrais> {
                 ),
               ],
             ),
-            SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  // Function to build an editable field using FormBuilder
+  // Fonction pour sélectionner une image depuis la galerie
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
   Widget buildEditableField(
       String label, String name, TextInputType inputType) {
     return FormBuilderTextField(

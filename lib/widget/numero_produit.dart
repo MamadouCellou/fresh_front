@@ -37,7 +37,7 @@ class CelluleProduitsWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 60,
+                    width: 70,
                     height: 60,
                     child: imagePath.isNotEmpty
                         ? Image.network(

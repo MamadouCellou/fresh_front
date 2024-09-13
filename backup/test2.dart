@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:fresh_front/constant/colors.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
-class PageCompartimentReclageFroid extends StatefulWidget {
+class PageCompartimentReclageFroidDeux extends StatefulWidget {
   @override
-  _PageCompartimentReclageFroidState createState() =>
-      _PageCompartimentReclageFroidState();
+  _PageCompartimentReclageFroidDeuxState createState() =>
+      _PageCompartimentReclageFroidDeuxState();
 }
 
-class _PageCompartimentReclageFroidState
-    extends State<PageCompartimentReclageFroid> {
+class _PageCompartimentReclageFroidDeuxState
+    extends State<PageCompartimentReclageFroidDeux> {
   late bool isSliderPlageManuelle = false;
   late bool isSliderPlageAuto = false;
   late bool isSliderEtatCircuit = false;
