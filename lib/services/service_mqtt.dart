@@ -1,116 +1,110 @@
-import 'dart:io';
-
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'dart:convert';
 
-class MQTTService {
-  final String broker = 'http://y0e990c1.ala.dedicated.aws.emqxcloud.com/';  // L'URL de ton serveur EMQX
-  final int port = 1883;                   // Le port par défaut pour MQTT
-  final String clientId = 'manda_temperatureId';
+class MqttService {
+  MqttServerClient? client;
+  String broker = '192.168.174.128'; // Adresse IP du broker local
+  String topicData = 'topic/manda_smart_envoi_data'; // Topic pour recevoir les données
+  String topicNotification= 'topic/manda_smart/notifications'; // Topic pour recevoir les notifications
+  String commandTopic = 'topic/manda_smart/commande'; // Topic pour envoyer des commandes
   
-  final String temperatureTopic = 'manda/temperature';  // Le topic pour les données de température
-
-  final String username = 'traore-manda-fresh';
-  final String password = 'Manda2024';
-
-  String message = 'No message yet';
-  List<String> receivedMessages = [];
-  List<String> sendedMessages = [];
-  bool isConnected = false;
-
-  MqttServerClient client;
-
-  MQTTService()
-      : client = MqttServerClient.withPort('c133a990.ala.dedicated.aws.emqxcloud.com', 'manda_fresh_app', 1883) {
-    client.keepAlivePeriod = 60;
-    client.logging(on: true);
-    client.onDisconnected = onDisconnected;
-    client.onConnected = onConnected;
-    client.autoReconnect = true;
-    client.onAutoReconnect = onAutoReconnect;
-    client.onAutoReconnected = onAutoReconnected;
-  }
+  // Variables pour stocker les données
+  String temperature = '0';
+  String humidity = '0';
+  String notification = '';
 
   Future<void> connect() async {
-    print("START CONNECTION NOW");
+    client = MqttServerClient(broker, '');
+    client?.port = 1883;
+    client?.logging(on: true);
+    client?.keepAlivePeriod = 20;
+    client?.onDisconnected = onDisconnected;
 
     final connMessage = MqttConnectMessage()
-        .withClientIdentifier(clientId)
-        .authenticateAs(username, password) // Authentification utilisateur/mot de passe
-        .withWillTopic('Will topic')
-        .withWillMessage('Will message')
-        .startClean() // Commence une nouvelle session
+        .withClientIdentifier('flutter_client')
+        .startClean()
         .withWillQos(MqttQos.atLeastOnce);
-    client.connectionMessage = connMessage;
+    client?.connectionMessage = connMessage;
 
     try {
-      print("Connecting...");
-      await client.connect();
-
-      if (client.connectionStatus!.state == MqttConnectionState.connected) {
-        print('Connected');
-        isConnected = true;
-        // Souscription au topic de température
-        subscribeToTemperatureTopic();
-      } else {
-        print('Connection failed - status is ${client.connectionStatus}');
-        disconnect();
-        exit(-1);
-      }
+      await client?.connect();
     } catch (e) {
-      print('Exception during connection: $e');
-      disconnect();
+      print('Exception: $e');
+      client?.disconnect();
     }
-  }
 
-  // Publication de message sur le topic des commandes
-  void sendCommand(String command, String commandTopic) async {
-    if (isConnected) {
-      print("Connection exists");
-
-      final builder = MqttClientPayloadBuilder();
-      builder.addString(command);
-      client.publishMessage(commandTopic, MqttQos.atLeastOnce, builder.payload!);
-      sendedMessages.add(command);
-    } else {
-      print("Connection state: ${client.connectionStatus!.state}");
-      print("No connection");
-    }
-  }
-
-  // Souscription au topic de température pour recevoir les messages
-  void subscribeToTemperatureTopic() {
-    client.subscribe(temperatureTopic, MqttQos.atLeastOnce);
-    client.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? c) {
-      if (c != null && c.isNotEmpty) {
+    if (client?.connectionStatus?.state == MqttConnectionState.connected) {
+      print('MQTT client connected');
+      // S'abonner au topic
+      client?.subscribe(topicData, MqttQos.atLeastOnce);
+      client?.subscribe(topicNotification, MqttQos.atLeastOnce);
+      client?.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
         final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
-        final String receivedMessage = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
-        message = receivedMessage;
-        receivedMessages.add(receivedMessage);
-        print('Received temperature message: $message from topic: ${c[0].topic}');
-      }
-    });
+        final String payload =
+            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+        final topic = c[0].topic;
+
+        if (topic == topicData) {
+          processMessage(payload);
+        } else if (topic == topicNotification) {
+          handleNotification(payload);
+        } 
+      });
+    } else {
+      print(
+          'Connection failed - status: ${client?.connectionStatus?.state}');
+      client?.disconnect();
+    }
   }
 
-  void disconnect() {
-    print('Disconnecting from the broker.');
-    client.disconnect();
-    isConnected = false;
+  void processMessage(String payload) {
+    // Décoder la chaîne JSON reçue
+    final data = jsonDecode(payload);
+    temperature = data['temperature'].toString();
+    humidity = data['humidity'].toString();
   }
 
-  void onConnected() {
-    print('Connected to the broker.');
+  void handleNotification(String payload) {
+    notification = payload;
+    print('Notification received: $notification');
   }
 
   void onDisconnected() {
-    print('Disconnected from the broker.');
+    print('MQTT client disconnected');
   }
 
-  void onAutoReconnect() {
-    print('Client auto reconnection sequence will start.');
+  // Méthode pour envoyer une commande à l'ESP8266
+  void sendCommand(String command) {
+    final builder = MqttClientPayloadBuilder();
+    builder.addString(command);
+    client?.publishMessage(commandTopic, MqttQos.atLeastOnce, builder.payload!);
+    print('Command sent: $command');
   }
 
-  void onAutoReconnected() {
-    print('Client auto reconnection sequence has completed.');
+  void sendMessage({String command = '', int temperatureMin = 0, int temperatureMax = 0}) {
+    final Map<String, dynamic> message = {
+      'command': command,
+      'temperatureMin': temperatureMin ,
+      'temperatureMax': temperatureMax,
+    };
+    final builder = MqttClientPayloadBuilder();
+    builder.addString(jsonEncode(message));
+    client?.publishMessage(commandTopic, MqttQos.exactlyOnce, builder.payload!);
+  }
+
+  // Méthode pour obtenir la température
+  String getTemperature() {
+    return temperature;
+  }
+
+  // Méthode pour obtenir l'humidité
+  String getHumidity() {
+    return humidity;
+  }
+
+  String getNotification() {
+    return notification;
   }
 }

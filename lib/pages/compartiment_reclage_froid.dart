@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fresh_front/constant/colors.dart';
+import 'package:fresh_front/services/service_mqtt.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class PageCompartimentReclageFroid extends StatefulWidget {
@@ -17,6 +18,8 @@ class _PageCompartimentReclageFroidState
 
   final TextEditingController minController = TextEditingController();
   final TextEditingController maxController = TextEditingController();
+  final TextEditingController minControllerManuel = TextEditingController();
+  final TextEditingController maxControllerManuel = TextEditingController();
 
   List<Map<String, dynamic>> products = [];
 
@@ -78,6 +81,28 @@ class _PageCompartimentReclageFroidState
     });
   }
 
+  MqttService myService= MqttService();
+
+
+  void onAppliqueTemperatureManuelle() {
+    // Prendre les valeurs des contrôleurs de texte pour la plage manuelle
+    int temperatureMin = int.parse(minControllerManuel.text);
+    int temperatureMax = int.parse(maxControllerManuel.text);
+
+    // Envoyer le message via MQTT
+    myService.sendMessage(temperatureMin: temperatureMin, temperatureMax: temperatureMax);
+  }
+  
+
+  
+
+  void toggleRelay(bool value) {
+    setState(() {
+      isSliderEtatCircuit = value;
+      myService.sendMessage(command: isSliderEtatCircuit ? "ON" : "OFF");
+    });
+  }
+
   final apiKey = "AIzaSyDGVpXSZMwSQk7eF8h9mEWqnxgR1TX0144";
   late GenerativeModel model;
 
@@ -88,6 +113,7 @@ class _PageCompartimentReclageFroidState
       model: 'gemini-1.5-flash',
       apiKey: apiKey,
     );
+    myService.connect();
     getProductsData();
     // getOptimalTemperature();
   }
@@ -143,47 +169,50 @@ class _PageCompartimentReclageFroidState
   }
 
   Future<void> getOptimalTemperature() async {
-    try {
-      if (products.isEmpty) {
-        print("Aucun produit avec plage de température trouvée.");
-        return;
-      }
+  try {
+    if (products.isEmpty) {
+      print("Aucun produit avec plage de température trouvée.");
+      return;
+    }
 
-      final prompt = """
+    final prompt = """
 Given the following food items with their respective temperature ranges:
 
 ${products.map((p) => '${p["name"]}: ${p["temp_min"]}°C to ${p["temp_max"]}°C').join(', ')},
 
-Determine the ideal temperature range (in °C) that would be suitable for storing all these items simultaneously. The range should be the smallest possible range that includes all the provided ranges, ensuring that every item is stored within its specified temperature limits. Provide the result in the format 'min - max'.
+Determine the ideal temperature range (in °C) that would be suitable for storing all these items simultaneously. The range should be the smallest possible range that includes all the provided ranges, ensuring that every item is stored within its specified temperature limits. Provide the result in the format 'min°C @ max°C'.
 """;
 
+    print("Prompt envoyé à l'IA: $prompt");
 
-      print("Prompt envoyé à l'IA: $prompt");
+    final response = await model.generateContent([Content.text(prompt)]);
 
-      final response = await model.generateContent([Content.text(prompt)]);
+    final responseText = response.text ?? "Aucune température optimale trouvée.";
+    print("Réponse de l'IA: $responseText");
 
-      final responseText = response.text ?? "No optimal temperature found.";
-      print("Réponse de l'IA: $responseText");
+    // Expression régulière mise à jour pour capturer le format '2°C @ 15°C'
+    final regex = RegExp(r'(\d+)°C\s*@\s*(\d+)°C');
+    final match = regex.firstMatch(responseText);
 
-      final regex = RegExp(r'(\d+)\s*-\s*(\d+)');
-      final match = regex.firstMatch(responseText);
+    if (match != null) {
+      final minTemperature = match.group(1);
+      final maxTemperature = match.group(2);
 
-      if (match != null) {
-        final minTemperature = match.group(1);
-        final maxTemperature = match.group(2);
-
+      if (minTemperature != null && maxTemperature != null) {
         setState(() {
-          minController.text = minTemperature!;
-          maxController.text = maxTemperature!;
+          minController.text = minTemperature;
+          maxController.text = maxTemperature;
         });
-      } else {
-        print("No optimal temperature range found in the response.");
       }
-    } catch (e) {
-      print("Erreur lors de l'appel à l'API : $e");
-      print("Erreur de calcul de température optimale.");
+    } else {
+      print("Aucune plage de température optimale trouvée dans la réponse.");
     }
+  } catch (e) {
+    print("Erreur lors de l'appel à l'API : $e");
+    print("Erreur de calcul de température optimale.");
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +267,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "20 °C",
+                              "${myService.getTemperature()} °C",
                               style: TextStyle(
                                 color: blackColor,
                                 fontSize: 25,
@@ -291,6 +320,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                             children: [
                               Flexible(
                                 child: TextField(
+                                  controller: minControllerManuel,
                                   enabled: true,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
@@ -319,6 +349,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                               Flexible(
                                 child: TextField(
                                   cursorColor: blackColor,
+                                  controller: maxControllerManuel,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     labelText: 'Max',
@@ -339,7 +370,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         TextButton(
-                          onPressed: null,
+                          onPressed: onAppliqueTemperatureManuelle,
                           child: Text(
                             'Appliquer',
                             style: TextStyle(
@@ -425,7 +456,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                   : Container(),
               SwitchListTile(
                 value: isSliderEtatCircuit,
-                onChanged: onChangeEtatCircuit,
+                onChanged: toggleRelay,
                 activeColor: greenColor,
                 title: Container(
                   padding: const EdgeInsets.all(10.0),

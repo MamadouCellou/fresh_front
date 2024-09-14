@@ -1,5 +1,6 @@
 import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/gps.dart';
+import 'package:fresh_front/services/service_mqtt.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 
@@ -19,13 +20,21 @@ class _DashboardPageState extends State<DashboardPage> {
       TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
 
   final List<String> imgList = [
-    'assets/images/agriculteur.png',
     'assets/images/orange.png', // Remplace avec le chemin de ta deuxième image
     'assets/images/mangue_1.png', // Remplace avec le chemin de ta troisième image
   ];
 
   int _currentIndex = 0;
   //final CarouselController _carouselController = CarouselController();
+
+  MqttService myService= MqttService();
+  
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    myService.connect();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +103,7 @@ class _DashboardPageState extends State<DashboardPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CardWidget(
-                  temperature: "15",
+                  temperature: "${myService.getTemperature()}",
                   title: "Refroidissement",
                 ),
                 const SizedBox(

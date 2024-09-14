@@ -4,6 +4,7 @@ import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/affiche_produit.dart';
 import 'package:fresh_front/pages/ajout_produit_frais.dart';
 import 'package:fresh_front/pages/modife_produit.dart';
+import 'package:fresh_front/services/service_mqtt.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 import 'package:get/get.dart';
 
@@ -76,6 +77,15 @@ class _PageFroidProductState extends State<PageFroidProduct> {
     }
   }
 
+   MqttService myService= MqttService();
+  
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    myService.connect();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,10 +108,10 @@ class _PageFroidProductState extends State<PageFroidProduct> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                const CardWidget(
+                 CardWidget(
                   height: 100,
                   width: 200,
-                  temperature: "8",
+                  temperature: "${myService.getTemperature()}",
                   title: "Temperature actuelle",
                 ),
                 const SizedBox(height: 15),
@@ -163,11 +173,13 @@ class _PageFroidProductState extends State<PageFroidProduct> {
               backgroundColor: Colors.grey,
               label: Text('Chargement...'),
             );
-          } else if (snapshot.hasError) {
+          } else if (!snapshot.hasData) {
             return FloatingActionButton.extended(
-              onPressed: null,
+              onPressed: (){
+                Get.to(AjoutProduitFrais(), arguments: {'id': "1"});
+              },
               backgroundColor: Colors.grey,
-              label: Text('Erreur'),
+              label: Text('Ajoutez un premier'),
             );
           } else {
             List<Map<String, dynamic>> produits = snapshot.data ?? [];
@@ -301,29 +313,20 @@ class _PageFroidProductState extends State<PageFroidProduct> {
 
   Future<void> deleteProduct(String productId) async {
     try {
-      // Supprimer le document où le champ 'id' correspond à 'productId'
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
+      await FirebaseFirestore.instance
           .collection('ProduitsFrais')
-          .where('id', isEqualTo: productId)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        // Supposons qu'il y a un seul document correspondant
-        DocumentReference docRef = snapshot.docs.first.reference;
-        await docRef.delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Produit supprimé avec succès')),
-        );
-        // Optionnel: Retourner à la page précédente ou rafraîchir la vue
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Aucun produit trouvé pour cet ID')),
-        );
-      }
-    } catch (e) {
-      print("Erreur lors de la suppression du produit: $e");
+          .doc(productId)
+          .delete();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la suppression du produit')),
+        SnackBar(
+          content: Text('Produit supprimé avec succès.'),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression du produit.'),
+        ),
       );
     }
   }
@@ -333,8 +336,8 @@ class _PageFroidProductState extends State<PageFroidProduct> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmer la suppression'),
-          content: Text('Êtes-vous sûr de vouloir supprimer ce produit ?'),
+          title: Text('Confirmation'),
+          content: Text('Voulez-vous vraiment supprimer ce produit ?'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -345,7 +348,7 @@ class _PageFroidProductState extends State<PageFroidProduct> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Fermer la boîte de dialogue
-                deleteProduct(productId); // Appel de la méthode de suppression
+                deleteProduct(productId); // Appeler la fonction de suppression
               },
               child: Text('Supprimer'),
             ),
