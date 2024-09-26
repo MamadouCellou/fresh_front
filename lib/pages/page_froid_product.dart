@@ -313,20 +313,29 @@ class _PageFroidProductState extends State<PageFroidProduct> {
 
   Future<void> deleteProduct(String productId) async {
     try {
-      await FirebaseFirestore.instance
+      // Supprimer le document où le champ 'id' correspond à 'productId'
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('ProduitsFrais')
-          .doc(productId)
-          .delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Produit supprimé avec succès.'),
-        ),
-      );
+          .where('id', isEqualTo: productId)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        // Supposons qu'il y a un seul document correspondant
+        DocumentReference docRef = snapshot.docs.first.reference;
+        await docRef.delete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Produit $productId supprimé avec succès.')),
+        );
+        // Optionnel: Retourner à la page précédente ou rafraîchir la vue
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Aucun produit trouvé pour cet ID.')),
+        );
+      }
     } catch (e) {
+      print("Erreur lors de la suppression du produit: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la suppression du produit.'),
-        ),
+        SnackBar(content: Text('Erreur lors de la suppression du produit.')),
       );
     }
   }

@@ -1,7 +1,9 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/auth.dart';
 import 'package:fresh_front/pages/onboarding.dart';
 import 'package:flutter/material.dart';
+import 'package:fresh_front/services/notifications_service.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -13,6 +15,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await FirebaseAppCheck.instance.activate(
+    webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.appAttest,
+  );
+
+  // Initialisation du service de notification
+  NotificationService notificationService = NotificationService();
+  await notificationService.initNotification();
 
   runApp(const MyApp());
 }
@@ -30,7 +42,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    
+
     checkUse(); // Appeler une méthode asynchrone
   }
 
@@ -59,7 +71,9 @@ class _MyAppState extends State<MyApp> {
           unselectedLabelStyle: TextStyle(color: greyColor),
         ),
       ),
-      home: launched ? AuthWrapper() : WelcomeScreen(), // Redirige vers la page appropriée
+      home: launched
+          ? AuthWrapper()
+          : WelcomeScreen(), // Redirige vers la page appropriée
     );
   }
 }

@@ -61,7 +61,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+
+                    await prefs.setBool('firstUse', true);
                     Get.to(Login());
                   },
                   child: Text(

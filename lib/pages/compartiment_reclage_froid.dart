@@ -1,218 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/services/service_mqtt.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:fresh_front/getX/getx.dart';
+import 'package:get/get.dart';
 
-class PageCompartimentReclageFroid extends StatefulWidget {
-  @override
-  _PageCompartimentReclageFroidState createState() =>
-      _PageCompartimentReclageFroidState();
-}
-
-class _PageCompartimentReclageFroidState
-    extends State<PageCompartimentReclageFroid> {
-  late bool isSliderPlageManuelle = false;
-  late bool isSliderPlageAuto = false;
-  late bool isSliderEtatCircuit = false;
-
-  final TextEditingController minController = TextEditingController();
-  final TextEditingController maxController = TextEditingController();
-  final TextEditingController minControllerManuel = TextEditingController();
-  final TextEditingController maxControllerManuel = TextEditingController();
-
-  List<Map<String, dynamic>> products = [];
-
-  void onChangePlageManuelle(bool value) {
-    if (isSliderPlageAuto) {
-      // Afficher un dialogue de confirmation si le réglage adaptatif est activé
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Confirmation"),
-            content: Text(
-                "Attention!\nVoulez-vous désactiver le réglage adaptatif et continuer avec le réglage manuel ?"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text("Annuler"),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    isSliderPlageAuto = false;
-                    isSliderPlageManuelle = value;
-                  });
-                  Navigator.of(context).pop();
-                },
-                child: Text("Continuer"),
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      setState(() {
-        isSliderPlageManuelle = value;
-      });
-    }
-  }
-
-  void onChangePlageAuto(bool value) async {
-    // Lorsque le réglage adaptatif est activé, désactiver le réglage manuel
-    if (value) {
-      await getOptimalTemperature();
-    }
-
-    setState(() {
-      isSliderPlageAuto = value;
-      if (value) {
-        isSliderPlageManuelle = false;
-      }
-    });
-  }
-
-  void onChangeEtatCircuit(bool v) {
-    setState(() {
-      isSliderEtatCircuit = v;
-    });
-  }
-
-  MqttService myService= MqttService();
-
-
-  void onAppliqueTemperatureManuelle() {
-    // Prendre les valeurs des contrôleurs de texte pour la plage manuelle
-    int temperatureMin = int.parse(minControllerManuel.text);
-    int temperatureMax = int.parse(maxControllerManuel.text);
-
-    // Envoyer le message via MQTT
-    myService.sendMessage(temperatureMin: temperatureMin, temperatureMax: temperatureMax);
-  }
-  
-
-  
-
-  void toggleRelay(bool value) {
-    setState(() {
-      isSliderEtatCircuit = value;
-      myService.sendMessage(command: isSliderEtatCircuit ? "ON" : "OFF");
-    });
-  }
-
-  final apiKey = "AIzaSyDGVpXSZMwSQk7eF8h9mEWqnxgR1TX0144";
-  late GenerativeModel model;
-
-  @override
-  void initState() {
-    super.initState();
-    model = GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: apiKey,
-    );
-    myService.connect();
-    getProductsData();
-    // getOptimalTemperature();
-  }
-
-  Future<void> getProductsData() async {
-    try {
-      final firestore = FirebaseFirestore.instance;
-
-      // Chargement des produits frais
-      final produitsQuery = await firestore.collection('ProduitsFrais').get();
-
-      List<Map<String, dynamic>> fetchedProducts = [];
-      for (var doc in produitsQuery.docs) {
-        final productData = doc.data();
-        final specifiqueId = productData['specifique_frais'];
-
-        print("Spécifique ID: $specifiqueId"); // Debugging line
-
-        // Utiliser le champ 'id' de la collection 'SpecifiqueProduitFroid'
-        final specifiqueQuery = await firestore
-            .collection('SpecifiqueProduitFroid')
-            .where('id', isEqualTo: specifiqueId)
-            .get();
-
-        if (specifiqueQuery.docs.isNotEmpty) {
-          final specifiqueData = specifiqueQuery.docs.first.data();
-
-          print(
-              "Données spécifiques trouvées: $specifiqueData"); // Debugging line
-
-          fetchedProducts.add({
-            "name": specifiqueData['nom'],
-            "temp_min": specifiqueData['temp_min'],
-            "temp_max": specifiqueData['temp_max'],
-          });
-        } else {
-          print("Produit non trouvé pour spécification ID: $specifiqueId");
-        }
-      }
-
-      if (fetchedProducts.isEmpty) {
-        print("Aucun produit avec plage de température trouvée.");
-      }
-
-      setState(() {
-        products = fetchedProducts;
-      });
-
-      print(products);
-    } catch (e) {
-      print("Erreur lors de la récupération des données : $e");
-    }
-  }
-
-  Future<void> getOptimalTemperature() async {
-  try {
-    if (products.isEmpty) {
-      print("Aucun produit avec plage de température trouvée.");
-      return;
-    }
-
-    final prompt = """
-Given the following food items with their respective temperature ranges:
-
-${products.map((p) => '${p["name"]}: ${p["temp_min"]}°C to ${p["temp_max"]}°C').join(', ')},
-
-Determine the ideal temperature range (in °C) that would be suitable for storing all these items simultaneously. The range should be the smallest possible range that includes all the provided ranges, ensuring that every item is stored within its specified temperature limits. Provide the result in the format 'min°C @ max°C'.
-""";
-
-    print("Prompt envoyé à l'IA: $prompt");
-
-    final response = await model.generateContent([Content.text(prompt)]);
-
-    final responseText = response.text ?? "Aucune température optimale trouvée.";
-    print("Réponse de l'IA: $responseText");
-
-    // Expression régulière mise à jour pour capturer le format '2°C @ 15°C'
-    final regex = RegExp(r'(\d+)°C\s*@\s*(\d+)°C');
-    final match = regex.firstMatch(responseText);
-
-    if (match != null) {
-      final minTemperature = match.group(1);
-      final maxTemperature = match.group(2);
-
-      if (minTemperature != null && maxTemperature != null) {
-        setState(() {
-          minController.text = minTemperature;
-          maxController.text = maxTemperature;
-        });
-      }
-    } else {
-      print("Aucune plage de température optimale trouvée dans la réponse.");
-    }
-  } catch (e) {
-    print("Erreur lors de l'appel à l'API : $e");
-    print("Erreur de calcul de température optimale.");
-  }
-}
-
+class PageCompartimentReclageFroid extends StatelessWidget {
+  final controleur = Get.put(CompartimentFroidController());
 
   @override
   Widget build(BuildContext context) {
@@ -235,9 +27,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 10,
-              ),
+              SizedBox(height: 10),
               Center(
                 child: Container(
                   decoration: BoxDecoration(
@@ -267,7 +57,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "${myService.getTemperature()} °C",
+                              "${controleur.myService.getTemperature()} °C",
                               style: TextStyle(
                                 color: blackColor,
                                 fontSize: 25,
@@ -286,30 +76,57 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                   ),
                 ),
               ),
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
               Text(
-                "Reclage de temperature",
+                "Réglage de température",
                 style: TextStyle(
                   fontSize: 20,
                   color: blackColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SwitchListTile(
-                value: isSliderPlageManuelle,
-                onChanged: onChangePlageManuelle,
-                activeColor: greenColor,
-                title: Text(
-                  "Regler de façon manuelle",
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: blackColor,
-                  ),
-                ),
-              ),
-              isSliderPlageManuelle
+              Obx(() => SwitchListTile(
+                    value: controleur.isSliderPlageManuelle.value,
+                    onChanged: (value) {
+                      if (value) {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text("Confirmation"),
+                              content: Text(
+                                  "Attention!\nVoulez-vous désactiver le réglage adaptatif et continuer avec le réglage manuel ?"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text("Annuler"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    controleur.togglePlageManuelle(true);
+                                    controleur.togglePlageAuto(false);
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text("Continuer"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                    activeColor: greenColor,
+                    title: Text(
+                      "Régler de façon manuelle",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: blackColor,
+                      ),
+                    ),
+                  )),
+              Obx(() => controleur.isSliderPlageManuelle.value
                   ? Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 80),
                       child: Column(
@@ -320,7 +137,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                             children: [
                               Flexible(
                                 child: TextField(
-                                  controller: minControllerManuel,
+                                  controller: controleur.minControllerManuel,
                                   enabled: true,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
@@ -349,7 +166,7 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                               Flexible(
                                 child: TextField(
                                   cursorColor: blackColor,
-                                  controller: maxControllerManuel,
+                                  controller: controleur.maxControllerManuel,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     labelText: 'Max',
@@ -363,14 +180,16 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                         ],
                       ),
                     )
-                  : Container(),
-              isSliderPlageManuelle
+                  : Container()),
+              Obx(() => controleur.isSliderPlageManuelle.value
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         TextButton(
-                          onPressed: onAppliqueTemperatureManuelle,
+                          onPressed: () {
+                            controleur.onAppliqueTemperatureManuelle();
+                          },
                           child: Text(
                             'Appliquer',
                             style: TextStyle(
@@ -382,102 +201,121 @@ Determine the ideal temperature range (in °C) that would be suitable for storin
                         ),
                       ],
                     )
-                  : Container(),
-              const SizedBox(
-                height: 10,
-              ),
-              SwitchListTile(
-                value: isSliderPlageAuto,
-                onChanged: onChangePlageAuto,
-                activeColor: greenColor,
-                title: Text(
-                  "Regler de façon adaptive",
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: blackColor,
-                  ),
-                ),
-              ),
-              isSliderPlageAuto
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 80),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: TextField(
-                                  controller: minController,
-                                  enabled: false,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'Min',
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                padding: const EdgeInsets.all(10.0),
-                                decoration: BoxDecoration(
-                                  color: greenColorTransparent,
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: Text(
-                                  '℃',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: greenColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Flexible(
-                                child: TextField(
-                                  controller: maxController,
-                                  enabled: false,
-                                  cursorColor: blackColor,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'Max',
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(),
-                        ],
-                      ),
-                    )
-                  : Container(),
-              SwitchListTile(
-                value: isSliderEtatCircuit,
-                onChanged: toggleRelay,
-                activeColor: greenColor,
-                title: Container(
-                  padding: const EdgeInsets.all(10.0),
-                  decoration: BoxDecoration(
-                    color: isSliderEtatCircuit
-                        ? greenColorTransparent
-                        : redColorTransparent,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Center(
-                    child: Text(
-                      isSliderEtatCircuit ? "Allumé" : "Eteint",
+                  : Container()),
+              const SizedBox(height: 10),
+              Obx(() => SwitchListTile(
+                    value: controleur.isSliderPlageAuto.value,
+                    onChanged: (value) {
+                      controleur.togglePlageManuelle(false);
+                      controleur.togglePlageAuto(value);
+                    },
+                    activeColor: greenColor,
+                    title: Text(
+                      "Régler de façon adaptive",
                       style: TextStyle(
-                        fontSize: 20,
-                        color: isSliderEtatCircuit ? greenColor : redColor,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: blackColor,
                       ),
                     ),
-                  ),
-                ),
-              ),
+                  )),
+              Obx(() => controleur.isSliderPlageAuto.value
+                  ? Obx(
+                      () => controleur.isLoadingTemperature.value
+                          ? Center(
+                              child: CircularProgressIndicator(
+                              color: Colors.green,
+                            ))
+                          : Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 80),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Flexible(
+                                        child: TextField(
+                                          controller:
+                                              controleur.minControllerOptimal,
+                                          enabled: false,
+                                          keyboardType: TextInputType.number,
+                                          decoration: InputDecoration(
+                                            labelText: 'Min',
+                                            border: InputBorder.none,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        padding: const EdgeInsets.all(10.0),
+                                        decoration: BoxDecoration(
+                                          color: greenColorTransparent,
+                                          borderRadius:
+                                              BorderRadius.circular(5),
+                                        ),
+                                        child: Text(
+                                          '℃',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            color: greenColor,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Flexible(
+                                        child: TextField(
+                                          controller:
+                                              controleur.maxControllerOptimal,
+                                          enabled: false,
+                                          cursorColor: blackColor,
+                                          keyboardType: TextInputType.number,
+                                          decoration: InputDecoration(
+                                            labelText: 'Max',
+                                            border: InputBorder.none,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Divider(),
+                                ],
+                              ),
+                            ),
+                    )
+                  : Container()),
+              Obx(() => SwitchListTile(
+                    value: controleur.isSliderEtatCircuitFroid.value,
+                    onChanged: (value) {
+                      controleur.toggleRelayFroid(value);
+                    },
+                    activeColor: greenColor,
+                    title: Container(
+                      padding: const EdgeInsets.all(10.0),
+                      decoration: BoxDecoration(
+                        color: controleur.isSliderEtatCircuitFroid.value
+                            ? greenColorTransparent
+                            : redColorTransparent,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Center(
+                        child: Text(
+                          controleur.isSliderEtatCircuitFroid.value
+                              ? "Allumé"
+                              : "Éteint",
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: controleur.isSliderEtatCircuitFroid.value
+                                ? greenColor
+                                : redColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )),
             ],
           ),
         ),

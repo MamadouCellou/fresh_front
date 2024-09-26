@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/pages/compartiment_reclage_chaud.dart';
 import 'package:fresh_front/pages/compartiment_reclage_froid.dart';
+import 'package:get/get.dart';
 // Importer le package Lottie si vous utilisez des animations Lottie
 import 'package:lottie/lottie.dart';
 
@@ -59,12 +60,7 @@ class ReclageSelectCompartiment extends StatelessWidget {
             children: <Widget>[
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PageCompartimentReclageFroid(),
-                    ),
-                  );
+                  Get.to(PageCompartimentReclageFroid());
                 },
                 child: Text(
                   'Compartiment Froid',

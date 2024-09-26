@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fresh_front/pages/affiche_produit.dart';
 import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/gps.dart';
+import 'package:fresh_front/pages/Guide/guides.dart';
 import 'package:fresh_front/pages/login.dart';
+import 'package:fresh_front/pages/notification.dart';
 import 'package:fresh_front/pages/page_chaud_product.dart';
 import 'package:fresh_front/pages/page_froid_product.dart';
 import 'package:flutter/material.dart';
@@ -15,8 +17,6 @@ import 'package:location/location.dart' as loc;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
-
-
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -40,7 +40,9 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     // Récupérer les arguments envoyés lors de la navigation
-    userEmail = FirebaseAuth.instance.currentUser?.email ?? 'Email non disponible';;
+    userEmail =
+        FirebaseAuth.instance.currentUser?.email ?? 'Email non disponible';
+    ;
 
     // Charger les informations de l'utilisateur depuis Firebase
     _loadUserData();
@@ -183,6 +185,7 @@ class _HomePageState extends State<HomePage> {
                 icon: Icon(Icons.notifications),
                 onPressed: () {
                   // Action pour l'icône de notification
+                  Get.to(NotificationsPage());
                 },
               ),
               Positioned(
@@ -241,7 +244,10 @@ class _HomePageState extends State<HomePage> {
                       paramItem(
                           icon: Icons.menu_book,
                           nom: "Guide de conservation",
-                          plus: true),
+                          plus: true,
+                          go: () {
+                            Get.to(GuideConservation());
+                          }),
                       paramItem(
                           icon: Icons.person,
                           nom: "Modifier profil",
@@ -442,8 +448,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget paramItem(
-      {required IconData icon, required String nom, bool plus = false}) {
+      {required IconData icon,
+      required String nom,
+      bool plus = false,
+      void Function()? go}) {
     return ListTile(
+      onTap: () {
+        Get.back();
+        if (go != null) {
+          go();
+        }
+      },
       leading: Icon(icon),
       title: Text(nom),
       trailing: plus ? Icon(Icons.arrow_right) : null,
