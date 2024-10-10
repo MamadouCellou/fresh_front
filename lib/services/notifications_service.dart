@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fresh_front/pages/notification.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:get/get.dart'; // Import Get pour la navigation
+import 'package:intl/intl.dart';
 
 class NotificationService {
   static final NotificationService _notificationService =
@@ -82,6 +84,21 @@ class NotificationService {
       payload: payload, // Inclure le payload pour la redirection
     );
 
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    String formattedDate =
+        DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
     print('Notification shown with payload: $payload');
+
+    firestore.collection('Notifications').doc(id.toString()).set({
+      'id': id,
+      'title': title,
+      'body': body,
+      'date': formattedDate,
+      'read': false,
+    });
+
+    print('Notification enregistrée dans la base');
   }
+
+ 
 }

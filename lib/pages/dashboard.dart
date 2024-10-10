@@ -118,14 +118,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(
               height: 20,
             ),
-            Text(
-              "Status des produits",
-              style: optionStyle,
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            SnapCarousel(),
+    
           ],
         ),
       ),

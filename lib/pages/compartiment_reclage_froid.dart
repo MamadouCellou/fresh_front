@@ -106,6 +106,7 @@ class PageCompartimentReclageFroid extends StatelessWidget {
                                 TextButton(
                                   onPressed: () {
                                     controleur.togglePlageManuelle(true);
+                                    controleur.getOptimalTemperature();
                                     controleur.togglePlageAuto(false);
                                     Navigator.of(context).pop();
                                   },

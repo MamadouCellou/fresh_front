@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fresh_front/pages/modife_produit.dart';
+import 'package:fresh_front/pages/modifie_produit_chaud.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AfficueProduitChaud extends StatefulWidget {
   const AfficueProduitChaud({super.key});
@@ -42,159 +44,173 @@ class _AfficueProduitChaudState extends State<AfficueProduitChaud> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text("Détail du produit chaud",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-        body: StreamBuilder<DocumentSnapshot>(
-          stream: _getProductStream(produitId),
-          builder: (context, produitSnapshot) {
-            if (produitSnapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-
-            if (!produitSnapshot.hasData || produitSnapshot.data == null) {
-              return Center(child: Text("Produit non disponible"));
-            }
-
-            var produit = produitSnapshot.data!.data() as Map<String, dynamic>?;
-            var specificId = produit?['specifique_chaud'] ?? '';
-
-            return StreamBuilder<QuerySnapshot>(
-              stream: _getSpecificDetailsStream(specificId),
-              builder: (context, specificSnapshot) {
-                if (specificSnapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-
-                if (!specificSnapshot.hasData ||
-                    specificSnapshot.data!.docs.isEmpty) {
-                  return Center(
-                      child: Text("Détails spécifiques non disponibles"));
-                }
-
-                // On récupère le premier document correspondant à l'ID
-                var specificDetails = specificSnapshot.data!.docs.first.data()
-                    as Map<String, dynamic>;
-
-                String typeAliment = specificDetails['nom'] ?? 'Non disponible';
-                String dateSechage =
-                    specificDetails['dure'] ?? 'Non disponible';
-
-                return SingleChildScrollView(
-                  padding: EdgeInsets.only(left: 20, bottom: 20, right: 20),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: 230,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(),
-                          image: DecorationImage(
-                            fit: BoxFit.cover,
-                            image: produit?['image'] != null
-                                ? NetworkImage(produit!['image'])
-                                : AssetImage('assets/images/default_image.png') as ImageProvider,
-                          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Détail du produit chaud",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: _getProductStream(produitId),
+        builder: (context, produitSnapshot) {
+          if (produitSnapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+    
+          if (!produitSnapshot.hasData || produitSnapshot.data == null) {
+            return Center(child: Text("Produit non disponible"));
+          }
+    
+          var produit = produitSnapshot.data!.data() as Map<String, dynamic>?;
+          var specificId = produit?['specifique_chaud'] ?? '';
+    
+          return StreamBuilder<QuerySnapshot>(
+            stream: _getSpecificDetailsStream(specificId),
+            builder: (context, specificSnapshot) {
+              if (specificSnapshot.connectionState ==
+                  ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+    
+              if (!specificSnapshot.hasData ||
+                  specificSnapshot.data!.docs.isEmpty) {
+                return Center(
+                    child: Text("Détails spécifiques non disponibles"));
+              }
+    
+              // On récupère le premier document correspondant à l'ID
+              var specificDetails = specificSnapshot.data!.docs.first.data()
+                  as Map<String, dynamic>;
+    
+              String typeAliment = specificDetails['nom'] ?? 'Non disponible';
+              String dateSechage =
+                  specificDetails['dure'] ?? 'Non disponible';
+    
+              return SingleChildScrollView(
+                padding: EdgeInsets.only(left: 20, bottom: 20, right: 20),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 250,
+                      width: 230,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(),
+                        image: DecorationImage(
+                          fit: BoxFit.cover,
+                          image: produit?['image'] != null
+                              ? NetworkImage(produit!['image'])
+                              : AssetImage('assets/images/default_image.png') as ImageProvider,
                         ),
                       ),
-                      propieteProduit(
-                        titre: "Description",
-                        sousTitre: produit?['description'] ?? 'Non disponible',
-                        paddingTop: 10,
-                        paddingBottom: 0,
-                      ),
-                      // ... Les widgets pour afficher les détails du produit
-                      propieteProduit(
-                          titre: "Type d'aliment", sousTitre: typeAliment),
-                      Divider(),
-                      propieteProduit(
-                          titre: "Date de séchage dans",
-                          sousTitre: "$dateSechage heures"),
-                          Divider(),
-                      propieteProduit(
-                        titre: "Date d'ajout",
-                        sousTitre: produit?['cree_a'],
-                      ),
-                      Divider(),
-                      propieteProduit(
-                        titre: "Date modification",
-                        sousTitre: produit?['modifie_a'],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-        ),
-        bottomSheet: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Get.to(ModifProduitFrais(), arguments: {'id': produitId});
-                },
-                style: ButtonStyle(
-                  backgroundColor:
-                      MaterialStateProperty.all<Color>(Colors.green),
-                  padding: MaterialStateProperty.all<EdgeInsets>(
-                      EdgeInsets.symmetric(horizontal: 30, vertical: 15)),
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      side: BorderSide(color: Colors.greenAccent, width: 2),
                     ),
-                  ),
-                  shadowColor: MaterialStateProperty.all<Color>(
-                      Colors.greenAccent.withOpacity(0.5)),
-                  elevation: MaterialStateProperty.all<double>(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.edit, color: Colors.white),
-                    SizedBox(width: 10),
-                    Text(
-                      "Modifier",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    propieteProduit(
+                      titre: "Description",
+                      sousTitre: produit?['description'] ?? 'Non disponible',
+                      paddingTop: 10,
+                      paddingBottom: 0,
                     ),
+                    // ... Les widgets pour afficher les détails du produit
+                    propieteProduit(
+                        titre: "Type d'aliment", sousTitre: typeAliment),
+                    Divider(),
+                    propieteProduit(
+                        titre: "Date de séchage dans",
+                        sousTitre: "$dateSechage heures"),
+                        Divider(),
+                    propieteProduit(
+                      titre: "Date d'ajout",
+                      sousTitre: produit?['cree_a'],
+                    ),
+                    Divider(),
+                    propieteProduit(
+                      titre: "Date modification",
+                      sousTitre: produit?['modifie_a'],
+                    ),
+                    Divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Date de séchage", style: TextStyle(fontSize: 15),),
+                        Text(produit?['expirationDate'], style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold),overflow: TextOverflow.ellipsis,),
+                      ],
+                    )
+              /*       propieteProduit(
+                      titre: "Date de séchage",
+                      sousTitre: produit?['expirationDate'],
+                    ), */
                   ],
                 ),
+              );
+            },
+          );
+        },
+      ),
+      bottomSheet: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: () async {
+                print("L'id ici : $produitId");
+    
+                final prefs = await SharedPreferences.getInstance();
+                 
+                Get.to(ModifProduitChaud(), arguments: {'id': produitId,'dure':prefs.getString('firstDure')});
+              },
+              style: ButtonStyle(
+                backgroundColor:
+                    MaterialStateProperty.all<Color>(Colors.green),
+                padding: MaterialStateProperty.all<EdgeInsets>(
+                    EdgeInsets.symmetric(horizontal: 30, vertical: 15)),
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    side: BorderSide(color: Colors.greenAccent, width: 2),
+                  ),
+                ),
+                shadowColor: MaterialStateProperty.all<Color>(
+                    Colors.greenAccent.withOpacity(0.5)),
+                elevation: MaterialStateProperty.all<double>(10),
               ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert),
-                offset: Offset(60, -75),
-                onSelected: (String value) {
-                  if (value == 'Supprimer') {
-                    _deleteProduct();
-                  }
-                },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'Supprimer',
-                    child: Text(
-                      'Supprimer le produit',
-                      style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.edit, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text(
+                    "Modifier",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert),
+              offset: Offset(60, -75),
+              onSelected: (String value) {
+                if (value == 'Supprimer') {
+                  _deleteProduct();
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'Supprimer',
+                  child: Text(
+                    'Supprimer le produit',
+                    style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -239,11 +255,11 @@ class _AfficueProduitChaudState extends State<AfficueProduitChaud> {
         children: [
           Text(
             inversedOrdre ? sousTitre : titre,
-            style: inversedStyle ? styleTitre : styleSousTitre,
+            style: inversedStyle ? styleTitre : styleSousTitre,overflow: TextOverflow.ellipsis,
           ),
           Text(
             inversedOrdre ? titre : sousTitre,
-            style: inversedOrdre ? styleSousTitre : styleTitre,
+            style: inversedOrdre ? styleSousTitre : styleTitre,overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

@@ -7,6 +7,8 @@ import 'package:fresh_front/pages/modife_produit.dart';
 import 'package:fresh_front/pages/modifie_produit_chaud.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PageChaudProduct extends StatefulWidget {
   @override
@@ -15,6 +17,9 @@ class PageChaudProduct extends StatefulWidget {
 
 class _PageChaudProductState extends State<PageChaudProduct> {
   bool _isExpandedChaudProduits = true;
+
+  String dureGlobal = "";
+  bool effectue = false;
 
   Stream<List<Map<String, dynamic>>> _getProduitsAndCategoriesStream() {
     // Récupérer les produits en temps réel
@@ -100,8 +105,10 @@ class _PageChaudProductState extends State<PageChaudProduct> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(child: CircularProgressIndicator());
                     } else if (snapshot.hasError) {
-                      return Center(child: Text('Erreur: ${snapshot.error}'));
+                      setFirst(false, "");
+                      return Center(child: Text('Aucun produit chaud trouvé.'));
                     } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      setFirst(false, "");
                       return Center(child: Text('Aucun produit chaud trouvé.'));
                     } else {
                       List<Map<String, dynamic>> produitsAvecCategories =
@@ -112,6 +119,16 @@ class _PageChaudProductState extends State<PageChaudProduct> {
                           children: produitsAvecCategories.map((produit) {
                             var categorie =
                                 produit['categorie'] as Map<String, dynamic>;
+                            print("Effecute avant : $effectue");
+
+                            dureGlobal = produitsAvecCategories
+                                .first['categorie']['dure'];
+
+                            if (!effectue) {
+                              setFirst(true, dureGlobal);
+                              effectue = true;
+                            }
+                            print("Effecute apres : $effectue");
                             return produitChaud(
                               id: produit['id'],
                               titre: produit['description'],
@@ -135,7 +152,8 @@ class _PageChaudProductState extends State<PageChaudProduct> {
         width: 100.0,
         child: FloatingActionButton.extended(
           onPressed: () {
-            Get.to(AjoutProduitChaud());
+            print("La duree" + dureGlobal);
+            Get.to(arguments: dureGlobal, AjoutProduitChaud());
           },
           backgroundColor: greenColor,
           label: Text(
@@ -162,66 +180,67 @@ class _PageChaudProductState extends State<PageChaudProduct> {
   }
 
   Widget produitChaud(
-      {required String titre,
-      required String sousTitre,
-      required String image, // URL de l'image
-      required String dateHeureFin,
-      required String id}) {
-    return GestureDetector(
-      onTap: () {
-        Get.to(AfficueProduitChaud(), arguments: {'id': id});
-        print("L'id $id");
-      },
-      onLongPress: () {
-        _showProductOptionsDialog(id);
-      },
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.green),
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(15),
+    {required String titre,
+    required String sousTitre,
+    required String image, // URL de l'image
+    required String dateHeureFin,
+    required String id}) {
+  return GestureDetector(
+    onTap: () {
+      Get.to(AfficueProduitChaud(), arguments: {'id': id});
+      print("L'id $id");
+    },
+    onLongPress: () {
+      _showProductOptionsDialog(id);
+    },
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.green),
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: ListTile(
+          title: Text(
+            titre,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
-          child: ListTile(
-            title: Text(
-              titre,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            subtitle: Text(sousTitre),
-            leading: Container(
-              width: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  fit: BoxFit.cover,
-                  image: NetworkImage(image), // Utilisation de NetworkImage
-                ),
+          subtitle: Text(sousTitre.isEmpty ? 'Catégorie inconnue' : sousTitre),
+          leading: Container(
+            width: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                fit: BoxFit.cover,
+                image: NetworkImage(image), // Utilisation de NetworkImage
               ),
             ),
-            trailing: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Color.fromRGBO(3, 75, 5, 1),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  dateHeureFin,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+          ),
+          trailing: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                dateHeureFin.isEmpty ? 'Inconnue' : dateHeureFin,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   void _showProductOptionsDialog(
     String id,
@@ -235,8 +254,9 @@ class _PageChaudProductState extends State<PageChaudProduct> {
             children: <Widget>[
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); 
-                   Get.to(ModifProduitChaud(), arguments: {'id': id});
+                  Navigator.of(context).pop();
+                  Get.to(ModifProduitChaud(),
+                      arguments: {'id': id, 'dure': dureGlobal});
                 },
                 child: Text('Modifier'),
               ),
@@ -301,6 +321,7 @@ class _PageChaudProductState extends State<PageChaudProduct> {
               onPressed: () {
                 Navigator.of(context).pop(); // Fermer la boîte de dialogue
                 deleteProduct(productId); // Appel de la méthode de suppression
+                setFirst(false, "");
               },
               child: Text('Supprimer'),
             ),
@@ -308,5 +329,27 @@ class _PageChaudProductState extends State<PageChaudProduct> {
         );
       },
     );
+  }
+
+  void setFirst(bool bool, String s) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool('firstBool', bool);
+    await prefs.setString('firstDure', s);
+
+    dureGlobal = s;
+
+    print("Le bool : $bool");
+    print("La duree : $s");
+  }
+
+  void getDure() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    String dure = prefs.getString('firstDure')!;
+
+    dureGlobal = dure;
+
+    print("Dure globale : $dureGlobal");
   }
 }

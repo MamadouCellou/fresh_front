@@ -51,7 +51,7 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
     fetchProduitData().then((_) {
       // On récupère d'abord les détails du produit avant de récupérer les aliments
       if (categorieProduitActuel != null) {
-        _fetchAlimentsFromFirestore();
+        _fetchAlimentsFromFirestore(args['dure']);
       }
     });
   }
@@ -78,13 +78,26 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
     }
   }
 
-  Future<void> _fetchAlimentsFromFirestore() async {
+  Future<void> _fetchAlimentsFromFirestore(String dureFiltre) async {
     try {
+      // Référence à la collection Firestore
       CollectionReference alimentsRef =
           FirebaseFirestore.instance.collection('SpecifiqueProduitChaud');
-      QuerySnapshot querySnapshot = await alimentsRef.get();
+
+      QuerySnapshot querySnapshot;
+
+      // Appliquer le filtre sur la durée si la valeur est différente de -1
+      if (dureFiltre != "") {
+        querySnapshot = await alimentsRef
+            .where('dure', isEqualTo: dureFiltre) // Filtrer par le champ 'dure'
+            .get();
+      } else {
+        querySnapshot = await alimentsRef
+            .get(); // Pas de filtre, récupérer tous les documents
+      }
 
       setState(() {
+        // Transformer les documents récupérés en une liste d'aliments
         aliments = querySnapshot.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return {
@@ -269,7 +282,9 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                           ),
                         ],
                       ),
-                      
+                      Text(
+                          "Les aliments dans la liste sont ceux seulement qui sont sechageable avec celui initialement ajouté."),
+
                       // Dropdown for selecting aliment
                       FormBuilderDropdown<String>(
                         name: 'aliment',
@@ -308,7 +323,6 @@ class _ModifProduitChaudState extends State<ModifProduitChaud> {
                         ),
                       ),
                       SizedBox(height: 10),
-                      
                     ],
                   ),
                 ),

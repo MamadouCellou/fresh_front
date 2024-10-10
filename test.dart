@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+/* import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fresh_front/constant/colors.dart';
@@ -445,4 +445,207 @@ class _PageCompartimentReclageFroidState extends State<PageCompartimentReclageFr
       print("Erreur lors de l'enregistrement de la notification : $error");
     });
   }
+}
+ */
+import 'package:flutter/material.dart';
+import 'package:fresh_front/models/produit_model.dart';
+
+void showDetailProduit({required Produit produit}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, 
+    builder: (context) {
+      return DraggableScrollableSheet(
+        expand: false, 
+        initialChildSize: 0.3, 
+        minChildSize: 0.1, 
+        maxChildSize: 0.9, 
+        builder: (context, scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  top: 8.0, left: 16, right: 16, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image et nom du produit
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: AssetImage(produit.image) as ImageProvider,
+                  ),
+                  SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      produit.nom,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  Divider(),
+
+                  // Description du produit
+                  Text(
+                    produit.description,
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    textAlign: TextAlign.justify,
+                  ),
+                  Divider(),
+
+                  // Plage de conservation
+                  Text(
+                    "Plage de conservation au frais",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Température minimale
+                        Column(
+                          children: [
+                            Icon(
+                              Icons.thermostat_outlined,
+                              color: Colors.blueAccent,
+                              size: 30,
+                            ),
+                            Text(
+                              '${produit.tempMin}℃',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
+                            Text(
+                              'Min',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Symbole d'intervalle
+                        Column(
+                          children: [
+                            Text(
+                              '~',
+                              style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Température maximale
+                        Column(
+                          children: [
+                            Icon(
+                              Icons.thermostat_outlined,
+                              color: Colors.redAccent,
+                              size: 30,
+                            ),
+                            Text(
+                              '${produit.tempMax}℃',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                            Text(
+                              'Max',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(),
+
+                  // Aliments associés
+                  Text(
+                    "Aliments associés",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Container(
+                    height: 150,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildAssociatedFood(
+                          'Banane',
+                          'assets/images/banane.png',
+                        ),
+                        _buildAssociatedFood(
+                          'Pomme',
+                          'assets/images/pomme.png',
+                        ),
+                        _buildAssociatedFood(
+                          'Fraise',
+                          'assets/images/fraise.png',
+                        ),
+                        _buildAssociatedFood(
+                          'Mangue',
+                          'assets/images/mangue.png',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+// Fonction pour construire un aliment associé
+Widget _buildAssociatedFood(String name, String imagePath) {
+  return Padding(
+    padding: const EdgeInsets.only(right: 16.0),
+    child: Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            imagePath,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          name,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
 }
