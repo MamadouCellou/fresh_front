@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'package:fresh_front/constant/colors.dart';
+import 'package:fresh_front/constant/variable_globales.dart';
 import 'package:fresh_front/pages/affiche_produit_chaud.dart';
 import 'package:fresh_front/pages/ajout_produit_chaud.dart';
-import 'package:fresh_front/pages/modife_produit.dart';
 import 'package:fresh_front/pages/modifie_produit_chaud.dart';
+import 'package:fresh_front/services/service_mqtt_aws_iot_core.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 import 'package:get/get.dart';
+import 'package:mqtt_client/mqtt_client.dart';
 
 class PageChaudProduct extends StatefulWidget {
   @override
@@ -53,6 +55,48 @@ class _PageChaudProductState extends State<PageChaudProduct> {
     });
   }
 
+  MqttService myService = MqttService();
+  
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _connectMqtt();
+  }
+
+  Future<void> _connectMqtt() async {
+    try {
+      await myService.connect();
+      updateTemperatures();
+
+      // Écoute des messages MQTT
+      myService.client?.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
+        final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
+        final String payload = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        
+        final topic = c[0].topic;
+        if (topic == myService.topicData) {
+          setState(() {
+            updateTemperatures();
+          });
+        }
+      });
+    } catch (error) {
+      print('Échec de la connexion MQTT : $error');
+      // Affichez une alerte à l'utilisateur ou un type de notification
+     
+    }
+  }
+
+  void updateTemperatures() {
+    // Récupérez et mettez à jour les températures ici
+    // Assurez-vous que les données sont non nulles avant de les utiliser
+    setState(() {
+      // Exemple d'initialisation
+      temperatureChaud = myService.getTemperatureChaud();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,10 +119,10 @@ class _PageChaudProductState extends State<PageChaudProduct> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                const CardWidget(
+                 CardWidget(
                   height: 100,
                   width: 200,
-                  temperature: "50",
+                  temperature: "$temperatureChaud",
                   title: "Temperature actuelle",
                 ),
                 const SizedBox(height: 15),

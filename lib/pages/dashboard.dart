@@ -1,12 +1,11 @@
-import 'package:fresh_front/constant/colors.dart';
-import 'package:fresh_front/pages/gps.dart';
-import 'package:fresh_front/services/service_mqtt.dart';
+import 'package:fresh_front/constant/variable_globales.dart';
+import 'package:fresh_front/services/service_mqtt_aws_iot_core.dart';
 import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:get/get.dart';
+import 'package:mqtt_client/mqtt_client.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -27,14 +26,49 @@ class _DashboardPageState extends State<DashboardPage> {
   int _currentIndex = 0;
   //final CarouselController _carouselController = CarouselController();
 
-  MqttService myService= MqttService();
+  MqttService myService = MqttService();
   
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    myService.connect();
+    _connectMqtt();
   }
+
+  Future<void> _connectMqtt() async {
+    try {
+      await myService.connect();
+      updateTemperatures();
+
+      // Écoute des messages MQTT
+      myService.client?.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
+        final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
+        final String payload = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        
+        final topic = c[0].topic;
+        if (topic == myService.topicData) {
+          setState(() {
+            updateTemperatures();
+          });
+        }
+      });
+    } catch (error) {
+      print('Échec de la connexion MQTT : $error');
+      // Affichez une alerte à l'utilisateur ou un type de notification
+     
+    }
+  }
+
+  void updateTemperatures() {
+    // Récupérez et mettez à jour les températures ici
+    // Assurez-vous que les données sont non nulles avant de les utiliser
+    setState(() {
+      // Exemple d'initialisation
+      temperatureFroid = myService.getTemperatureFroid();
+      temperatureChaud = myService.getTemperatureChaud();
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -103,14 +137,14 @@ class _DashboardPageState extends State<DashboardPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CardWidget(
-                  temperature: "${myService.getTemperature()}",
+                  temperature: "$temperatureFroid",
                   title: "Refroidissement",
                 ),
                 const SizedBox(
                   width: 10,
                 ),
-                const CardWidget(
-                  temperature: '50',
+                CardWidget(
+                  temperature: "$temperatureChaud",
                   title: "Séchage",
                 ),
               ],

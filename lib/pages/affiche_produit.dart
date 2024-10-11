@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
-import 'package:fresh_front/local/shared.dart';
-import 'package:fresh_front/pages/login.dart';
+
 import 'package:fresh_front/pages/modife_produit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fresh_front/pages/affiche_produit.dart';
 import 'package:fresh_front/pages/dashboard.dart';
 import 'package:fresh_front/pages/gps.dart';
 import 'package:fresh_front/pages/Guide/guides.dart';

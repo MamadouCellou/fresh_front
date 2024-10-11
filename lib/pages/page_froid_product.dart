@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fresh_front/constant/colors.dart';
+import 'package:fresh_front/constant/variable_globales.dart';
 import 'package:fresh_front/pages/affiche_produit.dart';
 import 'package:fresh_front/pages/ajout_produit_frais.dart';
 import 'package:fresh_front/pages/modife_produit.dart';
-import 'package:fresh_front/services/service_mqtt.dart';
+import 'package:fresh_front/services/service_mqtt_aws_iot_core.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 import 'package:get/get.dart';
+import 'package:mqtt_client/mqtt_client.dart';
 
 class PageFroidProduct extends StatefulWidget {
   @override
@@ -77,14 +79,48 @@ class _PageFroidProductState extends State<PageFroidProduct> {
     }
   }
 
-   MqttService myService= MqttService();
+  MqttService myService = MqttService();
   
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    myService.connect();
+    _connectMqtt();
   }
+
+  Future<void> _connectMqtt() async {
+    try {
+      await myService.connect();
+      updateTemperatures();
+
+      // Écoute des messages MQTT
+      myService.client?.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
+        final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
+        final String payload = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        
+        final topic = c[0].topic;
+        if (topic == myService.topicData) {
+          setState(() {
+            updateTemperatures();
+          });
+        }
+      });
+    } catch (error) {
+      print('Échec de la connexion MQTT : $error');
+      // Affichez une alerte à l'utilisateur ou un type de notification
+     
+    }
+  }
+
+  void updateTemperatures() {
+    // Récupérez et mettez à jour les températures ici
+    // Assurez-vous que les données sont non nulles avant de les utiliser
+    setState(() {
+      // Exemple d'initialisation
+      temperatureFroid = myService.getTemperatureFroid();
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +147,7 @@ class _PageFroidProductState extends State<PageFroidProduct> {
                  CardWidget(
                   height: 100,
                   width: 200,
-                  temperature: "${myService.getTemperature()}",
+                  temperature: "$temperatureFroid",
                   title: "Temperature actuelle",
                 ),
                 const SizedBox(height: 15),

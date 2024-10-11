@@ -5,7 +5,7 @@ import 'package:fresh_front/constant/colors.dart';
 import 'package:fresh_front/constant/theme.dart';
 import 'package:fresh_front/services/cubit/controle_cubit.dart';
 import 'package:fresh_front/services/notifications_service.dart';
-import 'package:fresh_front/services/service_mqtt.dart';
+
 import 'package:intl/intl.dart';
 
 class PageCompartimentReclageFroid extends StatefulWidget {
@@ -20,7 +20,6 @@ class _PageCompartimentReclageFroidState extends State<PageCompartimentReclageFr
   final TextEditingController minControllerManuel = TextEditingController();
   final TextEditingController maxControllerManuel = TextEditingController();
 
-  MqttService myService = MqttService();
 
   List<Map<String, dynamic>> products = [];
 
@@ -105,7 +104,7 @@ class _PageCompartimentReclageFroidState extends State<PageCompartimentReclageFr
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    "${myService.getTemperature()} °C",
+                                    "°C",
                                     style: TextStyle(
                                       color: blackColor,
                                       fontSize: 25,

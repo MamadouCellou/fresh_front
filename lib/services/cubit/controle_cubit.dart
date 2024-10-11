@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fresh_front/services/service_mqtt.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class ControlState {
@@ -51,7 +50,6 @@ class ControlState {
 }
 
 class ControlCubit extends Cubit<ControlState> {
-  MqttService myService = MqttService();
 
   final apiKey = "AIzaSyDGVpXSZMwSQk7eF8h9mEWqnxgR1TX0144";
   late GenerativeModel model;
@@ -77,7 +75,6 @@ class ControlCubit extends Cubit<ControlState> {
         model: 'gemini-1.5-flash',
         apiKey: apiKey,
       );
-      myService.connect();
     } catch (e) {
       print("Erreur lors de l'initialisation du modèle : $e");
     }

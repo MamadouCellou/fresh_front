@@ -1,5 +1,6 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:fresh_front/constant/colors.dart';
+import 'package:fresh_front/getX/getx.dart';
 import 'package:fresh_front/pages/auth.dart';
 import 'package:fresh_front/pages/onboarding.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,8 @@ void main() async {
   NotificationService notificationService = NotificationService();
   await notificationService.initNotification();
 
+  CompartimentFroidController compartimentFroidController = CompartimentFroidController();
+  await compartimentFroidController.loadSwitchState();
   runApp(const MyApp());
 }
 
