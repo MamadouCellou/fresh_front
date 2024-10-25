@@ -4,8 +4,10 @@ import 'package:fresh_front/models/produit_model.dart';
 
 class AlimentPage extends StatefulWidget {
   final type;
-  const AlimentPage({Key? key, required this.type}) : super(key: key,);
-
+  const AlimentPage({Key? key, required this.type})
+      : super(
+          key: key,
+        );
 
   @override
   _AlimentPageState createState() => _AlimentPageState();
@@ -219,37 +221,17 @@ class _AlimentPageState extends State<AlimentPage> {
                     ),
                     Divider(),
                     Text(
-                    "Aliments associés",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      "Aliments associés",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 10),
-                  Container(
-                    height: 150,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        _buildAssociatedFood(
-                          'Banane',
-                          'assets/images/banane.png',
-                        ),
-                        _buildAssociatedFood(
-                          'Pomme',
-                          'assets/images/pomme.png',
-                        ),
-                        _buildAssociatedFood(
-                          'Fraise',
-                          'assets/images/fraise.png',
-                        ),
-                        _buildAssociatedFood(
-                          'Mangue',
-                          'assets/images/banane.png',
-                        ),
-                      ],
-                    ),
-                  ),
+                    SizedBox(height: 10),
+                    AlimentsAssociesWidget(
+                      tempMax: double.parse(produit.tempMax),
+                      tempMin: double.parse(produit.tempMin),
+                    )
                   ],
                 ),
               ),
@@ -418,33 +400,69 @@ class _AlimentPageState extends State<AlimentPage> {
     );
   }
 }
-// Fonction pour construire un aliment associé
-Widget _buildAssociatedFood(String name, String imagePath) {
-  return Padding(
-    padding: const EdgeInsets.only(right: 16.0),
-    child: Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(
-            imagePath,
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          name,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    ),
-  );
+
+class AlimentsAssociesWidget extends StatelessWidget {
+  final double tempMin;
+  final double tempMax;
+
+  AlimentsAssociesWidget({required this.tempMin, required this.tempMax});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: getAlimentsAssocies(tempMin, tempMax),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          print('Erreur : ${snapshot.error}');
+          return Text('Erreur : ${snapshot.error}');
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('Aucun aliment associé trouvé.'));
+        } else {
+          List<Map<String, dynamic>> alimentsAssocies = snapshot.data!;
+
+          return ListView.builder(
+            shrinkWrap: true,
+            itemCount: alimentsAssocies.length,
+            itemBuilder: (context, index) {
+              final aliment = alimentsAssocies[index];
+              return ListTile(
+                leading: Image.network(aliment['image']),
+                title: Text(aliment['nom']),
+                subtitle: Text(
+                  'Température: ${aliment['temp_min']}°C - ${aliment['temp_max']}°C',
+                ),
+              );
+            },
+          );
+        }
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getAlimentsAssocies(
+      double tempMin, double tempMax) async {
+    final tolerance = 3.0;
+
+    // Récupérer tous les aliments de Firestore
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('SpecifiqueProduitFroid')
+        .get();
+
+    // Filtrer les aliments localement selon les températures min et max
+    List<Map<String, dynamic>> alimentsAssocies = [];
+    for (var doc in querySnapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final double tempMinProduit = double.parse(data['temp_min']);
+      final double tempMaxProduit = double.parse(data['temp_max']);
+
+      if ((tempMinProduit <= tempMax + tolerance) &&
+          (tempMaxProduit >= tempMin - tolerance) &&
+          (tempMaxProduit <= tempMax + tolerance)) {
+        alimentsAssocies.add(data);
+      }
+    }
+    return alimentsAssocies;
+  }
 }
-
-
-// Modèle Produit

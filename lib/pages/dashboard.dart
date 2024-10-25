@@ -22,6 +22,8 @@ class _DashboardPageState extends State<DashboardPage> {
   final List<String> imgList = [
     'assets/images/orange.png', // Remplace avec le chemin de ta deuxième image
     'assets/images/mangue_1.png', // Remplace avec le chemin de ta troisième image
+    'assets/images/pomme.png', // Remplace avec le chemin de ta troisième image
+    'assets/images/fraise.png', // Remplace avec le chemin de ta troisième image
   ];
 
   int _currentIndex = 0;
@@ -52,10 +54,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 itemBuilder: (context, index, realIndex) {
                   return Container(
                     width: 230,
+                    height: 200,
                     decoration: BoxDecoration(
                         image: DecorationImage(
                             image: AssetImage(imgList[index]),
-                            fit: BoxFit.cover)),
+                            fit: BoxFit.contain)),
                   );
                 },
                 options: CarouselOptions(
