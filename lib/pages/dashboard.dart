@@ -1,11 +1,9 @@
 import 'package:fresh_front/constant/variable_globales.dart';
 import 'package:fresh_front/services/service_mqtt_aws_iot_core.dart';
-import 'package:fresh_front/widget/card_cellule_widget.dart';
 import 'package:fresh_front/widget/card_widget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:mqtt_client/mqtt_client.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -16,59 +14,26 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   static const TextStyle optionStyle =
-      TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
+      TextStyle(fontSize: 25, fontWeight: FontWeight.bold);
 
   final List<String> imgList = [
     'assets/images/orange.png', // Remplace avec le chemin de ta deuxième image
     'assets/images/mangue_1.png', // Remplace avec le chemin de ta troisième image
+    'assets/images/pomme.png', // Remplace avec le chemin de ta troisième image
+    'assets/images/fraise.png', // Remplace avec le chemin de ta troisième image
   ];
 
   int _currentIndex = 0;
   //final CarouselController _carouselController = CarouselController();
 
-  MqttService myService = MqttService();
+  MqttService myService= MqttService();
   
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _connectMqtt();
+    myService.connect();
   }
-
-  Future<void> _connectMqtt() async {
-    try {
-      await myService.connect();
-      updateTemperatures();
-
-      // Écoute des messages MQTT
-      myService.client?.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
-        final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
-        final String payload = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
-        
-        final topic = c[0].topic;
-        if (topic == myService.topicData) {
-          setState(() {
-            updateTemperatures();
-          });
-        }
-      });
-    } catch (error) {
-      print('Échec de la connexion MQTT : $error');
-      // Affichez une alerte à l'utilisateur ou un type de notification
-     
-    }
-  }
-
-  void updateTemperatures() {
-    // Récupérez et mettez à jour les températures ici
-    // Assurez-vous que les données sont non nulles avant de les utiliser
-    setState(() {
-      // Exemple d'initialisation
-      temperatureFroid = myService.getTemperatureFroid();
-      temperatureChaud = myService.getTemperatureChaud();
-    });
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -85,17 +50,19 @@ class _DashboardPageState extends State<DashboardPage> {
                 itemCount: imgList.length,
                 itemBuilder: (context, index, realIndex) {
                   return Container(
-                    width: 230,
+                    width: 400,
+                    height: 400,
                     decoration: BoxDecoration(
                         image: DecorationImage(
                             image: AssetImage(imgList[index]),
-                            fit: BoxFit.cover)),
+                            fit: BoxFit.contain)),
                   );
                 },
                 options: CarouselOptions(
                   initialPage: 0,
                   autoPlay: true,
                   enlargeCenterPage: true,
+                  height: 300,
                   onPageChanged: (index, reason) {
                     setState(() {
                       _currentIndex = index;
@@ -127,7 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
  
             Padding(
-              padding: const EdgeInsets.only(top:10,bottom: 10),
+              padding: const EdgeInsets.only(top:20,bottom: 20),
               child: Text(
                 "Status des compartiments",
                 style: optionStyle,
@@ -137,14 +104,14 @@ class _DashboardPageState extends State<DashboardPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CardWidget(
-                  temperature: "$temperatureFroid",
+                  temperature: "${temperatureFroid}",
                   title: "Refroidissement",
                 ),
                 const SizedBox(
                   width: 10,
                 ),
-                CardWidget(
-                  temperature: "$temperatureChaud",
+                 CardWidget(
+                  temperature: "${temperatureChaud}",
                   title: "Séchage",
                 ),
               ],
@@ -152,14 +119,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(
               height: 20,
             ),
-            Text(
-              "Status des produits",
-              style: optionStyle,
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            SnapCarousel(),
+    
           ],
         ),
       ),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fresh_front/pages/Guide/page_fruit.dart';
-import 'package:fresh_front/pages/Guide/page_legumes.dart';
-import 'package:fresh_front/pages/Guide/page_tubercules.dart';
+import 'package:fresh_front/pages/Guide/aliment.dart';
 
 class GuideConservation extends StatefulWidget {
   const GuideConservation({super.key});
@@ -32,9 +30,12 @@ class _GuideConservationState extends State<GuideConservation> {
         ),
         body: TabBarView(
           children: [
-            FruitsPage(), // Page pour les fruits
+            AlimentPage(type: "1"),
+            AlimentPage(type: "2"),
+            AlimentPage(type: "3"),
+           /*  FruitsPage(), // Page pour les fruits
             LegumesPage(), // Page pour les légumes
-            TuberculesPage(), // Page pour les tubercules
+            TuberculesPage(), // Page pour les tubercules */
           ],
         ),
       ),

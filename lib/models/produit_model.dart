@@ -1,49 +1,45 @@
 class Produit {
-  String categorieProduit;  // Catégorie du produit
-  String description;       // Description du produit
-  String id;                // Identifiant unique du produit
-  String image;             // URL de l'image du produit
-  String modeConservation;  // Mode de conservation (frais ou chaud)
-  String nom;               // Nom du produit
-  String tempMax;           // Température maximale de conservation
-  String tempMin;           // Température minimale de conservation
+  final String categorieProduit;
+  final String description;
+  final String id;
+  final String image;
+  final String nom;
+  final String tempMin;
+  final String tempMax;
 
   Produit({
     required this.categorieProduit,
     required this.description,
     required this.id,
     required this.image,
-    required this.modeConservation,
     required this.nom,
-    required this.tempMax,
     required this.tempMin,
+    required this.tempMax,
   });
+}
 
-  // Méthode pour créer un produit à partir d'une carte (Map) (utile avec Firestore)
-  factory Produit.fromMap(Map<String, dynamic> map) {
-    return Produit(
-      categorieProduit: map['categorie_produit'] ?? '',
-      description: map['description'] ?? '',
-      id: map['id'] ?? '',
-      image: map['image'] ?? '',
-      modeConservation: map['mode_conservation'] ?? '',
-      nom: map['nom'] ?? '',
-      tempMax: map['temp_max'] ?? '',
-      tempMin: map['temp_min'] ?? '',
-    );
-  }
+class ProduitChaud {
+  final String categorieProduit;
+  final String description;
+  final String id;
+  final String image;
+  final String nom;
+  final String dure;
+  final String temp_soleil_min;
+  final String temp_soleil_max;
+  final String dure_soleil_min;
+  final String dure_soleil_max;
 
-  // Méthode pour convertir un produit en carte (Map)
-  Map<String, dynamic> toMap() {
-    return {
-      'categorie_produit': categorieProduit,
-      'description': description,
-      'id': id,
-      'image': image,
-      'mode_conservation': modeConservation,
-      'nom': nom,
-      'temp_max': tempMax,
-      'temp_min': tempMin,
-    };
-  }
+  ProduitChaud({
+    required this.categorieProduit,
+    required this.description,
+    required this.id,
+    required this.image,
+    required this.nom,
+    required this.dure,
+    required this.dure_soleil_min,
+    required this.dure_soleil_max,
+    required this.temp_soleil_min,
+    required this.temp_soleil_max,
+  });
 }
